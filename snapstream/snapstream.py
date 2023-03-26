@@ -1,13 +1,12 @@
 """Snapstream."""
 
-
 import logging
 from abc import ABCMeta, abstractmethod, abstractproperty
 from re import sub
 from time import sleep
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Optional
 
-from confluent_kafka import Consumer, Producer
+# from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
@@ -18,13 +17,12 @@ logger = logging.getLogger(__file__)
 class Singleton(type):
     """Maintain a single instance of a class."""
 
-    _instances: Dict[str, Any] = {}
+    _instances: Dict['Singleton', Any] = {}
 
     def __call__(cls, *args, **kwargs):
         """Perform metaclass action."""
         if cls not in cls._instances:
-            cls._instances[cls] = super(
-                Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         instance = cls._instances[cls]
         instance.__update__(*args, **kwargs)
         return instance
@@ -54,7 +52,7 @@ class Conf(metaclass=Singleton):
         """Set default app configuration."""
         self.conf = {**self.conf, **conf}
         for key, value in conf.items():
-            key = sub("[^0-9a-zA-Z]+", '_', key)
+            key = sub('[^0-9a-zA-Z]+', '_', key)
             setattr(self, key, value)
 
     def __repr__(self) -> str:
@@ -68,7 +66,7 @@ class Codec(metaclass=ABCMeta):
     @abstractproperty
     def name(self) -> str:
         """Set name of the codec instance."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def encode(self, obj: Any) -> bytes:
@@ -137,8 +135,8 @@ class Topic:
 
 
 def snap(
-    *topics: Iterable[Any],
-    sink: Union[Topic, Iterable[Topic]],
+    *topics: Topic,
+    sink: Iterable[Topic],
     cache: Optional[str] = None,
 ):
     """Snaps function to stream."""

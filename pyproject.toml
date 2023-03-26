@@ -30,5 +30,8 @@ include = ["snapstream"]
 venvPath = "."
 venv = ".venv"
 
+[tool.bandit]
+exclude_dirs = ["tests"]
+
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"

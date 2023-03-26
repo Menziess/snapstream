@@ -3,3 +3,16 @@ repos:
     rev: v1.1.300
     hooks:
       - id: pyright
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    args: ["-c", "pyproject.toml"]
+    hooks:
+      - id: bandit
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
