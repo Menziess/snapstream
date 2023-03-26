@@ -1,0 +1,7 @@
+[flake8]
+ban-relative-imports = true
+import-order-style = smarkets
+max_line_length = 120
+max-complexity = 10
+inline-quotes = single
+exclude = .git, build, dist, .venv
