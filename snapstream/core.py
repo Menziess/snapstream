@@ -3,7 +3,7 @@
 import logging
 from re import sub
 from time import sleep
-from typing import Any, Dict, Generator, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional
 
 # from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -19,16 +19,21 @@ logger = logging.getLogger(__file__)
 class Conf(metaclass=Singleton):
     """Defines app configuration."""
 
-    topics = set()
+    iterables = set()
 
     def start(self):
         """Start the streams."""
-        for t in self.topics:
-            list(t)
+        # TODO: run topic iterables in separate threads (>1)
+        # TODO: run iterables async
+        for it in self.iterables:
+            iterable_key = str(id(it))
+            for el in it:
+                pub.sendMessage(iterable_key, msg=el)
+                sleep(1)
 
-    def register_topics(self, *topic):
-        """Add topics to global Conf."""
-        self.topics.add(*topic)
+    def register_iterables(self, *it):
+        """Add iterables to global Conf."""
+        self.iterables.add(*it)
 
     def __init__(self, conf: dict = {}, state_dir: Optional[str] = None) -> None:
         """Define init behavior."""
@@ -68,7 +73,6 @@ class Topic:
         self.is_leader = is_leader
         self.starting_offset = offset
         self.codec = codec
-        c.register_topics(self)
 
     def create_topic(self, name: str, *args, **kwargs):
         """Create topic if it doesn't exist and is_leader=True."""
@@ -91,8 +95,7 @@ class Topic:
         while True:
             msg = "some msg"
             print("Consumed:", msg)
-            pub.sendMessage(str(id(self)), msg=msg)
-            sleep(1)
+            yield msg
 
     def __call__(self, *args, **kwargs):
         """Produce to topic."""
@@ -100,11 +103,11 @@ class Topic:
 
     def __del__(self):
         """Remove self from global Conf."""
-        Conf().topics.remove(self)
+        Conf().iterables.remove(self)
 
 
 def snap(
-    *topics: Generator,
+    *iterable: Iterable,
     sink: Iterable[Topic],
     cache: Optional[str] = None,
 ):
@@ -121,8 +124,10 @@ def snap(
                 # TODO: cache message
                 s(k, v)
 
-        for t in topics:
-            pub.subscribe(_handler, str(id(t)))
+        for it in iterable:
+            c.register_iterables(it)
+            iterable_key = str(id(it))
+            pub.subscribe(_handler, iterable_key)
         return _handler
 
     return _deco
