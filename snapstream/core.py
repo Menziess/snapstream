@@ -1,31 +1,19 @@
-"""Snapstream."""
+"""Snapstream core objects."""
 
 import logging
-from abc import ABCMeta, abstractmethod, abstractproperty
 from re import sub
 from time import sleep
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Generator, Iterable, Optional
 
 # from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
 
+from snapstream.codecs import Codec
+from snapstream.utils import Singleton
+
 logger = logging.getLogger(__file__)
-
-
-class Singleton(type):
-    """Maintain a single instance of a class."""
-
-    _instances: Dict['Singleton', Any] = {}
-
-    def __call__(cls, *args, **kwargs):
-        """Perform metaclass action."""
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        instance = cls._instances[cls]
-        instance.__update__(*args, **kwargs)
-        return instance
 
 
 class Conf(metaclass=Singleton):
@@ -58,25 +46,6 @@ class Conf(metaclass=Singleton):
     def __repr__(self) -> str:
         """Represent config."""
         return str(self.conf)
-
-
-class Codec(metaclass=ABCMeta):
-    """Base class for codecs."""
-
-    @abstractproperty
-    def name(self) -> str:
-        """Set name of the codec instance."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def encode(self, obj: Any) -> bytes:
-        """Serialize object."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def decode(self, s: bytes) -> dict:
-        """Deserialize object."""
-        raise NotImplementedError
 
 
 class Topic:
@@ -122,7 +91,7 @@ class Topic:
         while True:
             msg = "some msg"
             print("Consumed:", msg)
-            pub.sendMessage(self.name, msg=msg)
+            pub.sendMessage(str(id(self)), msg=msg)
             sleep(1)
 
     def __call__(self, *args, **kwargs):
@@ -135,7 +104,7 @@ class Topic:
 
 
 def snap(
-    *topics: Topic,
+    *topics: Generator,
     sink: Iterable[Topic],
     cache: Optional[str] = None,
 ):
@@ -153,7 +122,7 @@ def snap(
                 s(k, v)
 
         for t in topics:
-            pub.subscribe(_handler, t.name)
+            pub.subscribe(_handler, str(id(t)))
         return _handler
 
     return _deco
@@ -162,28 +131,3 @@ def snap(
 def stream():
     """Start the streams."""
     Conf().start()
-
-
-Conf({"group.id": "test", "bootstrap.servers": "localhost:29091"})
-
-t = Topic("flights", {
-    'sasl.username': "test"
-})
-
-
-@snap(t, sink=[t])
-def handle_message(msg):
-    """Handle incoming messages from t."""
-    key = "0"
-    value = {"name": msg}
-    return key, value
-
-
-def main():
-    """Run main program."""
-    # Pretend these are messages coming from the topic
-    stream()
-
-
-if __name__ == "__main__":
-    main()
