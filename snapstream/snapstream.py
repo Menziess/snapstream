@@ -24,9 +24,7 @@ class Singleton(type):
         """Perform metaclass action."""
         if cls not in cls._instances:
             cls._instances[cls] = super(
-                Singleton,
-                cls
-            ).__call__(*args, **kwargs)
+                Singleton, cls).__call__(*args, **kwargs)
         instance = cls._instances[cls]
         instance.__update__(*args, **kwargs)
         return instance
@@ -46,11 +44,7 @@ class Conf(metaclass=Singleton):
         """Add topics to global Conf."""
         self.topics.add(*topic)
 
-    def __init__(
-        self,
-        conf: dict = {},
-        state_dir: Optional[str] = None
-    ) -> None:
+    def __init__(self, conf: dict = {}, state_dir: Optional[str] = None) -> None:
         """Define init behavior."""
         self.conf: Dict[str, Any] = {}
         self.state_dir = state_dir
@@ -60,7 +54,7 @@ class Conf(metaclass=Singleton):
         """Set default app configuration."""
         self.conf = {**self.conf, **conf}
         for key, value in conf.items():
-            key = sub('[^0-9a-zA-Z]+', '_', key)
+            key = sub("[^0-9a-zA-Z]+", '_', key)
             setattr(self, key, value)
 
     def __repr__(self) -> str:
@@ -98,7 +92,7 @@ class Topic:
         is_leader=False,
         offset: Optional[int] = None,
         codec: Optional[Codec] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Pass topic related configuration."""
         c = Conf()
@@ -114,14 +108,12 @@ class Topic:
         if not self.is_leader:
             return
         admin = AdminClient(self.conf)
-        for t, f in admin.create_topics([
-            NewTopic(name, *args, **kwargs)
-        ]).items():
+        for t, f in admin.create_topics([NewTopic(name, *args, **kwargs)]).items():
             try:
                 f.result()
-                logger.info(f'Topic {t} created.')
+                logger.info(f"Topic {t} created.")
             except KafkaException as e:
-                if 'TOPIC_ALREADY_EXISTS' in str(e):
+                if "TOPIC_ALREADY_EXISTS" in str(e):
                     logger.warning(e)
                 else:
                     logger.error(e)
@@ -130,14 +122,14 @@ class Topic:
     def __iter__(self):
         """Consume from topic."""
         while True:
-            msg = 'some msg'
-            print('Consumed:', msg)
+            msg = "some msg"
+            print("Consumed:", msg)
             pub.sendMessage(self.name, msg=msg)
             sleep(1)
 
     def __call__(self, *args, **kwargs):
         """Produce to topic."""
-        print('Produced:', *args, **kwargs)
+        print("Produced:", *args, **kwargs)
 
     def __del__(self):
         """Remove self from global Conf."""
@@ -145,14 +137,14 @@ class Topic:
 
 
 def snap(
-    *topics: Topic,
+    *topics: Iterable[Any],
     sink: Union[Topic, Iterable[Topic]],
-    cache: Optional[str] = None
+    cache: Optional[str] = None,
 ):
     """Snaps function to stream."""
     c = Conf()
     if cache and not c.state_dir:
-        raise RuntimeError('Specify state_dir in Conf() first.')
+        raise RuntimeError("Specify state_dir in Conf() first.")
 
     # TODO: setup rocksdb cache
     def _deco(f):
@@ -161,9 +153,11 @@ def snap(
             for s in sink:
                 # TODO: cache message
                 s(k, v)
+
         for t in topics:
             pub.subscribe(_handler, t.name)
         return _handler
+
     return _deco
 
 
@@ -172,23 +166,18 @@ def stream():
     Conf().start()
 
 
-Conf({
-    'group.id': 'test',
-    'bootstrap.servers': 'localhost:29091'
-})
+Conf({"group.id": "test", "bootstrap.servers": "localhost:29091"})
 
-t = Topic('flights', {
-    'sasl.username': 'test'
+t = Topic("flights", {
+    'sasl.username': "test"
 })
 
 
 @snap(t, sink=[t])
 def handle_message(msg):
     """Handle incoming messages from t."""
-    key = '0'
-    value = {
-        'name': msg
-    }
+    key = "0"
+    value = {"name": msg}
     return key, value
 
 
