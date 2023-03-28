@@ -1,11 +1,11 @@
 """Snapstream core objects."""
 
 import logging
+from contextlib import contextmanager
 from re import sub
-from time import sleep
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional
 
-# from confluent_kafka import Consumer, Producer
+from confluent_kafka import Consumer
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
@@ -29,7 +29,6 @@ class Conf(metaclass=Singleton):
             iterable_key = str(id(it))
             for el in it:
                 pub.sendMessage(iterable_key, msg=el)
-                sleep(1)
 
     def register_iterables(self, *it):
         """Add iterables to global Conf."""
@@ -51,6 +50,43 @@ class Conf(metaclass=Singleton):
     def __repr__(self) -> str:
         """Represent config."""
         return str(self.conf)
+
+
+@contextmanager
+def get_consumer(
+    topic: str,
+    conf: dict,
+    offset=None,
+    codec: Optional[Codec] = None
+) -> Iterator[Iterator[Any]]:
+    """Yield an iterable to consume from kafka."""
+    c = Consumer(conf, logger=logger)
+
+    def consume():
+        def on_assign(c, ps):
+            for p in ps:
+                if offset:
+                    p.offset = offset
+            c.assign(ps)
+
+        logger.debug(f'Subscribing to topic: {topic}.')
+        c.subscribe([topic], on_assign=on_assign)
+
+        logger.debug(f'Consuming from topic: {topic}.')
+        while True:
+            msg = c.poll(1.0)
+            if msg is None:
+                continue
+            if err := msg.error():
+                raise KafkaException(err)
+            if codec:
+                decoded_val = codec.decode(msg.value())
+                msg.set_value(decoded_val)
+            yield msg
+    try:
+        yield consume()
+    finally:
+        c.close()
 
 
 class Topic:
@@ -92,10 +128,10 @@ class Topic:
 
     def __iter__(self):
         """Consume from topic."""
-        while True:
-            msg = "some msg"
-            print("Consumed:", msg)
-            yield msg
+        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec)
+        with c as consumer:
+            for msg in consumer:
+                yield msg
 
     def __call__(self, *args, **kwargs):
         """Produce to topic."""
@@ -108,7 +144,7 @@ class Topic:
 
 def snap(
     *iterable: Iterable,
-    sink: Iterable[Topic],
+    sink: Iterable[Callable[[Any], None]],
     cache: Optional[str] = None,
 ):
     """Snaps function to stream."""
@@ -119,10 +155,10 @@ def snap(
     # TODO: setup rocksdb cache
     def _deco(f):
         def _handler(msg):
-            k, v = f(msg)
+            processed_msg = f(msg)
             for s in sink:
                 # TODO: cache message
-                s(k, v)
+                s(processed_msg)
 
         for it in iterable:
             c.register_iterables(it)
