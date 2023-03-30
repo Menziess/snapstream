@@ -1,5 +1,6 @@
 """Snapstream utilities."""
 
+import logging
 from typing import Any, Dict
 
 
@@ -20,3 +21,14 @@ class Singleton(type):
         instance = cls._instances[cls]
         instance.__update__(*args, **kwargs)
         return instance
+
+
+class KafkaIgnoredPropertyFilter(logging.Filter):
+    """Filter out specific kafka logging."""
+
+    def filter(self, record):
+        """Suppress CONFWARN messages with specific config keys."""
+        return not (
+            record.levelno == logging.WARNING
+            and 'property and will be ignored' in record.getMessage()
+        )

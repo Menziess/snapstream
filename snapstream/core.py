@@ -5,15 +5,18 @@ from contextlib import contextmanager
 from re import sub
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional
 
-from confluent_kafka import Consumer
+from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
 
 from snapstream.codecs import Codec
-from snapstream.utils import Singleton
+from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
 logger = logging.getLogger(__file__)
+
+READ_FROM_START = -2
+READ_FROM_END = -1
 
 
 class Conf(metaclass=Singleton):
@@ -25,6 +28,8 @@ class Conf(metaclass=Singleton):
         """Start the streams."""
         # TODO: run topic iterables in separate threads (>1)
         # TODO: run iterables async
+        logger.addFilter(KafkaIgnoredPropertyFilter())
+
         for it in self.iterables:
             iterable_key = str(id(it))
             for el in it:
@@ -89,6 +94,40 @@ def get_consumer(
         c.close()
 
 
+@contextmanager
+def get_producer(
+    topic: str,
+    conf: dict,
+    dry=False,
+    codec: Optional[Codec] = None
+) -> Iterator[Callable[[Any], Any]]:
+    """Yield kafka produce method."""
+    p = Producer(conf, logger=logger)
+
+    def _acked(err, msg):
+        if err is not None:
+            logger.error(f'Failed to deliver message: {err}.')
+            # Bubble up every single error
+            raise KafkaException(err)
+        else:
+            logger.debug(f'Produced to topic: {topic}.')
+
+    def produce(value, *args, **kwargs):
+        if codec:
+            logger.debug(f'Encoding using codec: {topic}.')
+            value = codec.encode(value)
+        if dry:
+            logger.warning(f'Skipped sending message to {topic} [dry=True].')
+            return
+        p.produce(topic=topic, value=value, *args, **kwargs, callback=_acked)
+        # Immediately send every message
+        p.flush()
+
+    yield produce
+
+    p.flush()
+
+
 class Topic:
     """Act as producer and consumer."""
 
@@ -108,6 +147,7 @@ class Topic:
         self.conf = {**c.conf, **conf}
         self.is_leader = is_leader
         self.starting_offset = offset
+        self.producer = None
         self.codec = codec
 
     def create_topic(self, name: str, *args, **kwargs):
@@ -133,13 +173,13 @@ class Topic:
             for msg in consumer:
                 yield msg
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, dry=False, **kwargs,):
         """Produce to topic."""
-        print("Produced:", *args, **kwargs)
-
-    def __del__(self):
-        """Remove self from global Conf."""
-        Conf().iterables.remove(self)
+        self.producer = (
+            self.producer or
+            get_producer(self.name, self.conf, dry, self.codec).__enter__()
+        )
+        self.producer(*args, **kwargs)
 
 
 def snap(
