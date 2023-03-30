@@ -2,7 +2,9 @@
 
 import logging
 from contextlib import contextmanager
+from queue import Queue
 from re import sub
+from threading import Event, Thread
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional
 
 from confluent_kafka import Consumer, Producer
@@ -26,14 +28,32 @@ class Conf(metaclass=Singleton):
 
     def start(self):
         """Start the streams."""
-        # TODO: run topic iterables in separate threads (>1)
-        # TODO: run iterables async
         logger.addFilter(KafkaIgnoredPropertyFilter())
 
-        for it in self.iterables:
+        def spread_iterable_messages(it, queue, stop_signal):
             iterable_key = str(id(it))
-            for el in it:
-                pub.sendMessage(iterable_key, msg=el)
+            try:
+                for el in it:
+                    if stop_signal.is_set():
+                        break
+                    pub.sendMessage(iterable_key, msg=el)
+            except Exception as e:
+                queue.put(e)
+                stop_signal.set()
+
+        queue, stop_signal = Queue(maxsize=1), Event()
+        threads = [
+            Thread(
+                target=spread_iterable_messages,
+                args=(it, queue, stop_signal)
+            )
+            for it in self.iterables
+        ]
+
+        for t in threads:
+            t.start()
+
+        raise queue.get()
 
     def register_iterables(self, *it):
         """Add iterables to global Conf."""
