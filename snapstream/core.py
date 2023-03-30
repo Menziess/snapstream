@@ -184,20 +184,15 @@ class Topic:
 
 def snap(
     *iterable: Iterable,
-    sink: Iterable[Callable[[Any], None]],
-    cache: Optional[str] = None,
+    sink: Iterable[Callable[[Any], None]]
 ):
     """Snaps function to stream."""
     c = Conf()
-    if cache and not c.state_dir:
-        raise RuntimeError("Specify state_dir in Conf() first.")
 
-    # TODO: setup rocksdb cache
     def _deco(f):
         def _handler(msg):
             processed_msg = f(msg)
             for s in sink:
-                # TODO: cache message
                 s(processed_msg)
 
         for it in iterable:

@@ -1,7 +1,8 @@
 """Snapstream public objects."""
 
 from snapstream.caching import Cache
-from snapstream.core import Conf, Topic, snap, stream
+from snapstream.core import (READ_FROM_END, READ_FROM_START, Conf, Topic, snap,
+                             stream)
 
 __all__ = [
     'Conf',
@@ -9,4 +10,6 @@ __all__ = [
     'snap',
     'stream',
     'Cache',
+    'READ_FROM_START',
+    'READ_FROM_END',
 ]
