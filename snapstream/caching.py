@@ -67,6 +67,10 @@ class Cache:
         options.set_delete_obsolete_files_period_micros(10 * 1000)
         return options
 
+    def __call__(self, key, val, *args) -> None:
+        """Call cache to set item."""
+        self.__setitem__(key, val)
+
     def __contains__(self, key) -> bool:
         """Key exists in db."""
         return key in self.db

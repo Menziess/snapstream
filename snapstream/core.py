@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from queue import Queue
 from re import sub
 from threading import Event, Thread
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional
+from typing import Any, Callable, Dict, Iterator, Optional
 
 from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -26,7 +26,7 @@ class Conf(metaclass=Singleton):
 
     iterables = set()
 
-    def start(self):
+    def start(self, **kwargs):
         """Start the streams."""
         logger.addFilter(KafkaIgnoredPropertyFilter())
 
@@ -36,7 +36,7 @@ class Conf(metaclass=Singleton):
                 for el in it:
                     if stop_signal.is_set():
                         break
-                    pub.sendMessage(iterable_key, msg=el)
+                    pub.sendMessage(iterable_key, msg=el, kwargs=kwargs)
             except Exception as e:
                 queue.put(e)
                 stop_signal.set()
@@ -59,10 +59,9 @@ class Conf(metaclass=Singleton):
         """Add iterables to global Conf."""
         self.iterables.add(*it)
 
-    def __init__(self, conf: dict = {}, state_dir: Optional[str] = None) -> None:
+    def __init__(self, conf: dict = {}) -> None:
         """Define init behavior."""
         self.conf: Dict[str, Any] = {}
-        self.state_dir = state_dir
         self.__update__(conf)
 
     def __update__(self, conf: dict = {}):
@@ -120,7 +119,7 @@ def get_producer(
     conf: dict,
     dry=False,
     codec: Optional[Codec] = None
-) -> Iterator[Callable[[Any], Any]]:
+) -> Iterator[Callable[[Any, Any], Any]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
 
@@ -132,14 +131,14 @@ def get_producer(
         else:
             logger.debug(f'Produced to topic: {topic}.')
 
-    def produce(value, *args, **kwargs):
+    def produce(key, val, *args, **kwargs):
         if codec:
             logger.debug(f'Encoding using codec: {topic}.')
-            value = codec.encode(value)
+            val = codec.encode(val)
         if dry:
             logger.warning(f'Skipped sending message to {topic} [dry=True].')
             return
-        p.produce(topic=topic, value=value, *args, **kwargs, callback=_acked)
+        p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=_acked)
         # Immediately send every message
         p.flush()
 
@@ -193,37 +192,10 @@ class Topic:
             for msg in consumer:
                 yield msg
 
-    def __call__(self, *args, dry=False, **kwargs,):
+    def __call__(self, val, key=None, * args, dry=False, **kwargs):
         """Produce to topic."""
         self.producer = (
             self.producer or
             get_producer(self.name, self.conf, dry, self.codec).__enter__()
         )
-        self.producer(*args, **kwargs)
-
-
-def snap(
-    *iterable: Iterable,
-    sink: Iterable[Callable[[Any], None]]
-):
-    """Snaps function to stream."""
-    c = Conf()
-
-    def _deco(f):
-        def _handler(msg):
-            processed_msg = f(msg)
-            for s in sink:
-                s(processed_msg)
-
-        for it in iterable:
-            c.register_iterables(it)
-            iterable_key = str(id(it))
-            pub.subscribe(_handler, iterable_key)
-        return _handler
-
-    return _deco
-
-
-def stream():
-    """Start the streams."""
-    Conf().start()
+        self.producer(key, val, *args, **kwargs)
