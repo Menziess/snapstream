@@ -1,67 +1,47 @@
 # Snapstream
 
-**Note:** this project is work in progress.
+<img src="https://github.com/Menziess/snapstream/blob/feature/github-actions/res/logo.png?raw=true" width="25%" height="25%" align="right" />
+
+A tiny data-flow model with a user-friendly interface that provides sensible defaults for Kafka integration, message serialization/deserialization, and data caching.
+
+In response to a challenge of performing a "merge-as-of", "nearby join", or "merge by key distance" operation on multiple kafka streams while reading topics from separate kafka clusters, this package was born.
+
+No actual stream or external database is required, cached data is persisted to disk using rocksdb, applications using snapstream are more inclined to be; self-contained, easy to extend, less complex, easy to test using regular iterables:
+
+## Installation
+
+```sh
+pip install snapstream
+```
 
 ## Usage
 
-The `Conf()` singleton object contains default configurations:
+In the example below, `snap` decorates the `handle` function, binding the iterable `range(5)` to it:
 
 ```py
-from snapstream import Conf, Topic, snap, stream
+from snapstream import snap, stream
 
-Conf({'group.id': '$Default', 'bootstrap.servers': 'localhost:29091'})
+r = range(5)
 
-cache = Cache('state/db')  # stores data in rocksdb
+@snap(r, sink=[print])
+    def handler(msg):
+        return f'Hello {msg}'
 
-t = Topic('flights', {
-    'sasl.username': 'AUEOZPERNVZW2',
-    'sasl.password': '*******',
-})
+stream()
 ```
 
-The topic and the cache can be passed to the `snap` decorator:
-
-```py
-@snap(topic, sink=[cache])
-def cache_flight(msg):
-    """Process incoming flight and cache in rocksdb."""
-    val = msg.value()
-    key = val['flight_id']
-
-    flight = {
-        'id': val['flight_id'],
-        'origin': val['inbound_flight_location'],
-        'destination': val['outbound_flight_location'],
-    }
-    return key, flight
+```sh
+Hello 0
+Hello 1
+Hello 2
+Hello 3
+Hello 4
 ```
 
-The `cache_flight` function will handle any incoming messages, and store them in the cache.
+## Features
 
-We can set up a mock events stream by creating a generator function:
-
-```py
-def mock_events():
-    for i in range(10):
-        yield i, f'MockEvent'
-
-
-@snap(mock_events(), sink=[print])
-def join_streams(msg):
-    """Use id to find flight in cache."""
-    id, event = msg
-    flight = cache[id]
-    result = {
-        **flight,
-        'event': event,
-    }
-    return id, result
-
-
-if __name__ == "__main__":
-    stream()
-```
-
-The `join_streams` function handles incoming mock messages, and uses the id to find the associated flight from the cache.
-
-When all streams are "snapped" to the handler functions, we call `stream()` to start all data streams.
+- `snapstream.Topic`: an iterable/callable to consume and produce (default: [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html))
+- `snapstream.Cache`: a callable/dict to persist data (default: [**rocksdict**](https://congyuwang.github.io/RocksDict/rocksdict.html))
+- `snapstream.Conf`: a singleton object, can be used to store common kafka configurations
+- `snapstream.snap`: a function to bind streams (iterables) and sinks (callables) to user defined handler functions
+- `snapstream.stream`: a function to start the streams
