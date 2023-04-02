@@ -21,14 +21,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+
       - uses: abatilo/actions-poetry@v2.1.6
         with:
           poetry-version: "1.4.1"
+
+      - name: Get latest tag
+        id: get_tag
+        run: echo "::set-output name=tag::$(git describe --abbrev=0 --tags)"
+
+      - name: Set package version
+        run: poetry version $(echo ${{ steps.get_tag.outputs.tag }} | sed 's/v//')
+
       - name: Build package
         run: poetry build
+
       - name: Publish package
         run: |
           export POETRY_PYPI_TOKEN_PYPI="${{ secrets.PYPI_API_TOKEN }}"
