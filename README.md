@@ -1,8 +1,12 @@
 # Snapstream
 
-<img src="res/logo.png" width="25%" height="25%" align="right" />
+<img src="https://github.com/Menziess/snapstream/blob/feature/github-actions/res/logo.png?raw=true" width="25%" height="25%" align="right" />
 
-An easy to use, extensible data-flow model, providing sensible defaults to produce and consume to and from kafka, serialize/deserialize messages, and cache large amounts of data.
+A tiny data-flow model with a user-friendly interface that provides sensible defaults for Kafka integration, message serialization/deserialization, and data caching.
+
+In response to a challenge of performing a "merge-as-of", "nearby join", or "merge by key distance" operation on multiple kafka streams while reading topics from separate kafka clusters, this package was born.
+
+No actual stream or external database is required, cached data is persisted to disk using rocksdb, applications using snapstream are more inclined to be; self-contained, easy to extend, less complex, easy to test using regular iterables:
 
 ## Installation
 
@@ -17,27 +21,27 @@ In the example below, `snap` decorates the `handle` function, binding the iterab
 ```py
 from snapstream import snap, stream
 
+r = range(5)
 
-@snap(range(5))
-def handle(msg):
-    print('Greetings', msg)
+@snap(r, sink=[print])
+    def handler(msg):
+        return f'Hello {msg}'
 
 stream()
 ```
 
 ```sh
-➜ python main.py
-Greetings 0
-Greetings 1
-Greetings 2
-Greetings 3
-Greetings 4
+Hello 0
+Hello 1
+Hello 2
+Hello 3
+Hello 4
 ```
 
 ## Features
 
-- `snapstream.Topic`: consume from topic (iterable), produce to topic (callable), uses [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html) by default
-- `snapstream.Cache`: persist data, uses [**rocksdict**](https://congyuwang.github.io/RocksDict/rocksdict.html)
-- `snapstream.Conf`: configuration singleton class, manages threads for all streams
-- `snapstream.stream`: start streams
-- `snapstream.snap`: bind streams (iterable) and sinks (callable) to handler functions
+- `snapstream.Topic`: an iterable/callable to consume and produce (default: [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html))
+- `snapstream.Cache`: a callable/dict to persist data (default: [**rocksdict**](https://congyuwang.github.io/RocksDict/rocksdict.html))
+- `snapstream.Conf`: a singleton object, can be used to store common kafka configurations
+- `snapstream.snap`: a function to bind streams (iterables) and sinks (callables) to user defined handler functions
+- `snapstream.stream`: a function to start the streams
