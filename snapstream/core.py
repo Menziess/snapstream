@@ -47,13 +47,19 @@ class Conf(metaclass=Singleton):
                 target=spread_iterable_messages,
                 args=(it, queue, stop_signal)
             )
-            for it in self.iterables
+            for _, it in self.iterables
         ]
 
-        for t in threads:
-            t.start()
-
-        raise queue.get()
+        try:
+            for t in threads:
+                t.start()
+            if exception := queue.get():
+                raise exception
+        except KeyboardInterrupt:
+            logger.info('You stopped the program.')
+        finally:
+            stop_signal.set()
+            self.iterables = set()
 
     def register_iterables(self, *it):
         """Add iterables to global Conf."""
@@ -153,7 +159,6 @@ class Topic:
     def __init__(
         self,
         name: str,
-        *args,
         conf: dict = {},
         is_leader=False,
         offset: Optional[int] = None,

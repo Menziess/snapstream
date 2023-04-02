@@ -9,10 +9,10 @@ from snapstream.core import READ_FROM_END, READ_FROM_START, Conf, Topic
 from snapstream.utils import Sink
 
 __all__ = [
-    'Conf',
-    'Topic',
     'snap',
     'stream',
+    'Conf',
+    'Topic',
     'Cache',
     'READ_FROM_START',
     'READ_FROM_END',
@@ -21,7 +21,7 @@ __all__ = [
 
 def snap(
     *iterable: Iterable,
-    sink: Iterable[Sink]
+    sink: Iterable[Sink] = []
 ):
     """Snaps function to stream.
 
@@ -55,8 +55,8 @@ def snap(
                 sink_output(s, output)
 
         for it in iterable:
-            c.register_iterables(it)
             iterable_key = str(id(it))
+            c.register_iterables((iterable_key, it))
             pub.subscribe(_handler, iterable_key)
         return _handler
 
