@@ -1,6 +1,6 @@
 # Snapstream
 
-<img src="https://github.com/Menziess/snapstream/blob/feature/github-actions/res/logo.png?raw=true" width="25%" height="25%" align="right" />
+<img src="https://raw.githubusercontent.com/menziess/snapstream/master/res/logo.png" width="25%" height="25%" align="right" />
 
 A tiny data-flow model with a user-friendly interface that provides sensible defaults for Kafka integration, message serialization/deserialization, and data caching.
 
