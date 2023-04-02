@@ -26,26 +26,34 @@ class Conf(metaclass=Singleton):
 
     iterables = set()
 
+    def register_iterables(self, *it):
+        """Add iterables to global Conf."""
+        self.iterables.add(*it)
+
+    @staticmethod
+    def distribute_messages(it, queue, stop_signal, kwargs):
+        """Publish messages from iterable."""
+        iterable_key = str(id(it))
+        try:
+            for el in it:
+                if stop_signal.is_set():
+                    break
+                pub.sendMessage(iterable_key, msg=el, kwargs=kwargs)
+        except Exception as e:
+            queue.put(e)
+            stop_signal.set()
+        finally:
+            queue.put(None)
+
     def start(self, **kwargs):
         """Start the streams."""
         logger.addFilter(KafkaIgnoredPropertyFilter())
 
-        def spread_iterable_messages(it, queue, stop_signal):
-            iterable_key = str(id(it))
-            try:
-                for el in it:
-                    if stop_signal.is_set():
-                        break
-                    pub.sendMessage(iterable_key, msg=el, kwargs=kwargs)
-            except Exception as e:
-                queue.put(e)
-                stop_signal.set()
-
         queue, stop_signal = Queue(maxsize=1), Event()
         threads = [
             Thread(
-                target=spread_iterable_messages,
-                args=(it, queue, stop_signal)
+                target=self.distribute_messages,
+                args=(it, queue, stop_signal, kwargs)
             )
             for _, it in self.iterables
         ]
@@ -53,17 +61,14 @@ class Conf(metaclass=Singleton):
         try:
             for t in threads:
                 t.start()
-            if exception := queue.get():
-                raise exception
+            while any(t.is_alive() for t in threads):
+                if exception := queue.get():
+                    raise exception
         except KeyboardInterrupt:
             logger.info('You stopped the program.')
         finally:
             stop_signal.set()
             self.iterables = set()
-
-    def register_iterables(self, *it):
-        """Add iterables to global Conf."""
-        self.iterables.add(*it)
 
     def __init__(self, conf: dict = {}) -> None:
         """Define init behavior."""
