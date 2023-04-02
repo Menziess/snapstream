@@ -35,7 +35,7 @@ jobs:
         run: echo "::set-output name=tag::$(git describe --abbrev=0 --tags)"
 
       - name: Set package version
-        run: poetry version $(echo ${{ steps.get_tag.outputs.tag }} | sed 's/v//')
+        run: poetry version "${{ steps.get_tag.outputs.tag }}"
 
       - name: Build package
         run: poetry build
