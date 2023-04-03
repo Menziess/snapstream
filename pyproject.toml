@@ -12,6 +12,8 @@ python = "^3.10"
 confluent-kafka = "^2.0.2"
 rocksdict = "^0.3.10"
 pypubsub = "^4.0.3"
+avro = "^1.11.1"
+toolz = "^0.12.0"
 
 [tool.poetry.group.dev.dependencies]
 pydocstyle = "^6.3.0"
