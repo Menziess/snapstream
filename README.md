@@ -45,8 +45,8 @@ messages = ('🐌', '🚬', '😁', '🐢', '👑')
 # RocksDB is a persistent key-value store
 cache = Cache('db/demo')
 
-# If 'is_leader' is true, we are allowed to create the topic
-topic = Topic('demo', is_leader=True, conf={
+# Each topic may have its own configuration
+topic = Topic('demo', conf={
     'group.id': 'demo',
     'group.instance.id': 'demo',
     'bootstrap.servers': 'localhost:29091',
@@ -99,8 +99,8 @@ docker compose up broker -d
 
 ## Features
 
-- `snapstream.Topic`: consume from (iterable) and produce to (callable) kafka using [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html)
-- `snapstream.Cache`: store data to disk using [**rocksdict**](https://congyuwang.github.io/RocksDict/rocksdict.html)
-- `snapstream.Conf`: set global kafka configuration (can be overridden per topic)
-- `snapstream.snap`: bind streams (iterables) and sinks (callables) to user defined handler functions
-- `snapstream.stream`: start the streams
+- [`snapstream.Topic`](snapstream/core.py): consume from (iterable) and produce to (callable) kafka using [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html)
+- [`snapstream.Cache`](snapstream/caching.py): store data to disk using [**rocksdict**](https://congyuwang.github.io/RocksDict/rocksdict.html)
+- [`snapstream.Conf`](snapstream/core.py): set global kafka configuration (can be overridden per topic)
+- [`snapstream.snap`](snapstream/__init__.py): bind streams (iterables) and sinks (callables) to user defined handler functions
+- [`snapstream.stream`](snapstream/__init__.py): start the streams

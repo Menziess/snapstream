@@ -1,11 +1,12 @@
 """Snapstream core objects."""
 
 import logging
+from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from queue import Queue
 from re import sub
 from threading import Thread, current_thread
-from typing import Any, Callable, Dict, Iterator, Optional
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional
 
 from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -87,13 +88,64 @@ class Conf(metaclass=Singleton):
         return str(self.conf)
 
 
+class ITopic(metaclass=ABCMeta):
+    """Base class for topic implementations."""
+
+    @abstractmethod
+    def __init__(
+        self,
+        name: str,
+        conf: Dict[str, Any] = {},
+        offset: Optional[int] = None,
+        codec: Optional[Codec] = None,
+        **kwargs: Dict[str, Any]
+    ) -> None:
+        """Initialize topic instance.
+
+        - Should use Conf().conf as default kafka configuration.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_topic(self, name: str, *args: Any, **kwargs: Dict[str, Any]) -> None:
+        """Create topic.
+
+        - Should allow *args, **kwargs passthrough to kafka client.
+        - Should log warning if topic already exists.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def __iter__(self) -> Iterable[Any]:
+        """Consume from topic.
+
+        - Should instantiate consumer when called (iterated over).
+        - Should deserialize using topic codec.
+        - Should use topic offset attribute.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def __call__(self, val, key=None, * args, dry: bool = False, **kwargs: Dict[str, Any]) -> None:
+        """Produce to topic.
+
+        - Should instantiate producer when first called (function call).
+        - Should set producer on topic producer attribute.
+        - Should use topic producer attribute in susequent calls.
+        - Should serialize using topic codec.
+        - Should skip sending message when dry is True.
+        - Should show a warning when skipped.
+        """
+        raise NotImplementedError
+
+
 @contextmanager
 def get_consumer(
     topic: str,
     conf: dict,
     offset=None,
     codec: Optional[Codec] = None
-) -> Iterator[Iterator[Any]]:
+) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
 
@@ -158,14 +210,13 @@ def get_producer(
     p.flush()
 
 
-class Topic:
+class Topic(ITopic):
     """Act as producer and consumer."""
 
     def __init__(
         self,
         name: str,
         conf: dict = {},
-        is_leader=False,
         offset: Optional[int] = None,
         codec: Optional[Codec] = None,
         **kwargs,
@@ -174,20 +225,17 @@ class Topic:
         c = Conf()
         self.name = name
         self.conf = {**c.conf, **conf}
-        self.is_leader = is_leader
         self.starting_offset = offset
         self.producer = None
         self.codec = codec
 
-    def create_topic(self, name: str, *args, **kwargs):
-        """Create topic if it doesn't exist and is_leader=True."""
-        if not self.is_leader:
-            return
+    def create_topic(self, name: str, *args, **kwargs) -> None:
+        """Create topic."""
         admin = AdminClient(self.conf)
         for t, f in admin.create_topics([NewTopic(name, *args, **kwargs)]).items():
             try:
                 f.result()
-                logger.info(f"Topic {t} created.")
+                logger.debug(f"Topic {t} created.")
             except KafkaException as e:
                 if "TOPIC_ALREADY_EXISTS" in str(e):
                     logger.warning(e)
@@ -195,14 +243,14 @@ class Topic:
                     logger.error(e)
                     raise
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable[Any]:
         """Consume from topic."""
         c = get_consumer(self.name, self.conf, self.starting_offset, self.codec)
         with c as consumer:
             for msg in consumer:
                 yield msg
 
-    def __call__(self, val, key=None, * args, dry=False, **kwargs):
+    def __call__(self, val, key=None, * args, dry=False, **kwargs) -> None:
         """Produce to topic."""
         self.producer = (
             self.producer or
