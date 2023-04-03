@@ -101,6 +101,8 @@ docker compose up broker -d
 
 - [`snapstream.Topic`](snapstream/core.py): consume from (iterable) and produce to (callable) kafka using [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html)
 - [`snapstream.Cache`](snapstream/caching.py): store data to disk using [**rocksdict**](https://congyuwang.github.io/RocksDict/rocksdict.html)
+- [`snapstream.AvroCodec`](snapstream/codecs.py): serialize and deserialize avro messages
+- [`snapstream.JsonCodec`](snapstream/codecs.py): serialize and deserialize json messages
 - [`snapstream.Conf`](snapstream/core.py): set global kafka configuration (can be overridden per topic)
 - [`snapstream.snap`](snapstream/__init__.py): bind streams (iterables) and sinks (callables) to user defined handler functions
-- [`snapstream.stream`](snapstream/__init__.py): start the streams
+- [`snapstream.stream`](snapstream/__init__.py): start streaming
