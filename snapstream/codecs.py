@@ -51,7 +51,7 @@ def serialize_avro(schema: Schema, msg: dict) -> bytes:
         raise
 
 
-class Codec(metaclass=ABCMeta):
+class ICodec(metaclass=ABCMeta):
     """Base class for codecs."""
 
     @property
@@ -79,7 +79,7 @@ class Codec(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-class JsonCodec(Codec):
+class JsonCodec(ICodec):
     """Codec for avro messages."""
 
     def __init__(self, name: str):
@@ -95,7 +95,7 @@ class JsonCodec(Codec):
         return deserialize_json(s)
 
 
-class AvroCodec(Codec):
+class AvroCodec(ICodec):
     """Codec for avro messages."""
 
     def __init__(self, name: str, path: str):
