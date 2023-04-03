@@ -4,7 +4,7 @@ import logging
 from contextlib import contextmanager
 from queue import Queue
 from re import sub
-from threading import Event, Thread
+from threading import Thread, current_thread
 from typing import Any, Callable, Dict, Iterator, Optional
 
 from confluent_kafka import Consumer, Producer
@@ -31,35 +31,36 @@ class Conf(metaclass=Singleton):
         self.iterables.add(*it)
 
     @staticmethod
-    def distribute_messages(it, queue, stop_signal, kwargs):
+    def distribute_messages(it, queue, kwargs):
         """Publish messages from iterable."""
         iterable_key = str(id(it))
         try:
             for el in it:
-                if stop_signal.is_set():
-                    break
                 pub.sendMessage(iterable_key, msg=el, kwargs=kwargs)
         except Exception as e:
+            logger.debug(f'Exception in thread {current_thread().getName()}.')
             queue.put(e)
-            stop_signal.set()
         finally:
             queue.put(None)
+            logger.debug(f'Stopping thread {current_thread().getName()}.')
 
     def start(self, **kwargs):
         """Start the streams."""
         logger.addFilter(KafkaIgnoredPropertyFilter())
 
-        queue, stop_signal = Queue(maxsize=1), Event()
+        queue = Queue(maxsize=1)
         threads = [
             Thread(
                 target=self.distribute_messages,
-                args=(it, queue, stop_signal, kwargs)
+                args=(it, queue, kwargs)
             )
             for _, it in self.iterables
         ]
 
         try:
             for t in threads:
+                logger.debug(f'Spawning thread {t.getName()}.')
+                t.setDaemon(True)
                 t.start()
             while any(t.is_alive() for t in threads):
                 if exception := queue.get():
@@ -67,7 +68,6 @@ class Conf(metaclass=Singleton):
         except KeyboardInterrupt:
             logger.info('You stopped the program.')
         finally:
-            stop_signal.set()
             self.iterables = set()
 
     def __init__(self, conf: dict = {}) -> None:
