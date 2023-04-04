@@ -13,7 +13,7 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
 
-from snapstream.codecs import Codec
+from snapstream.codecs import ICodec
 from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
 logger = logging.getLogger(__file__)
@@ -97,7 +97,7 @@ class ITopic(metaclass=ABCMeta):
         name: str,
         conf: Dict[str, Any] = {},
         offset: Optional[int] = None,
-        codec: Optional[Codec] = None,
+        codec: Optional[ICodec] = None,
         **kwargs: Dict[str, Any]
     ) -> None:
         """Initialize topic instance.
@@ -144,7 +144,7 @@ def get_consumer(
     topic: str,
     conf: dict,
     offset=None,
-    codec: Optional[Codec] = None
+    codec: Optional[ICodec] = None
 ) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
@@ -181,7 +181,7 @@ def get_producer(
     topic: str,
     conf: dict,
     dry=False,
-    codec: Optional[Codec] = None
+    codec: Optional[ICodec] = None
 ) -> Iterator[Callable[[Any, Any], Any]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
@@ -218,7 +218,7 @@ class Topic(ITopic):
         name: str,
         conf: dict = {},
         offset: Optional[int] = None,
-        codec: Optional[Codec] = None,
+        codec: Optional[ICodec] = None,
         **kwargs,
     ) -> None:
         """Pass topic related configuration."""
