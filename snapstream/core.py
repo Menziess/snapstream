@@ -39,11 +39,11 @@ class Conf(metaclass=Singleton):
             for el in it:
                 pub.sendMessage(iterable_key, msg=el, kwargs=kwargs)
         except Exception as e:
-            logger.debug(f'Exception in thread {current_thread().getName()}.')
+            logger.debug(f'Exception in thread {current_thread().name}.')
             queue.put(e)
         finally:
             queue.put(None)
-            logger.debug(f'Stopping thread {current_thread().getName()}.')
+            logger.debug(f'Stopping thread {current_thread().name}.')
 
     def start(self, **kwargs):
         """Start the streams."""
@@ -60,8 +60,8 @@ class Conf(metaclass=Singleton):
 
         try:
             for t in threads:
-                logger.debug(f'Spawning thread {t.getName()}.')
-                t.setDaemon(True)
+                logger.debug(f'Spawning thread {t.name}.')
+                t.daemon = True
                 t.start()
             while any(t.is_alive() for t in threads):
                 if exception := queue.get():
