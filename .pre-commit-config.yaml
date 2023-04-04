@@ -3,7 +3,6 @@ repos:
     rev: v1.1.300
     hooks:
       - id: pyright
-        args: ["snapstream"]
   - repo: https://github.com/pycqa/pydocstyle
     rev: 6.3.0
     hooks:
