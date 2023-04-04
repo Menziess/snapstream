@@ -1,18 +1,18 @@
 repos:
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.300
-    args: ["snapstream"]
     hooks:
       - id: pyright
+        args: ["snapstream"]
   - repo: https://github.com/pycqa/pydocstyle
     rev: 6.3.0
     hooks:
       - id: pydocstyle
   - repo: https://github.com/pycqa/bandit
     rev: 1.7.5
-    args: ["-c", "pyproject.toml"]
     hooks:
       - id: bandit
+        args: ["-c", "pyproject.toml"]
   - repo: https://github.com/pycqa/flake8
     rev: 6.0.0
     hooks:
