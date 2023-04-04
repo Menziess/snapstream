@@ -26,12 +26,12 @@ def snap(
     """Snaps function to stream.
 
     Ex:
-        >>> topic = Topic('demo')
-        >>> cache = Cache('state/demo')
+        >> topic = Topic('demo')
+        >> cache = Cache('state/demo')
 
-        >>> @snap(my_topic, sink=[print, cache])
-        ... def handler(msg, **kwargs):
-        ...     return msg.key(), msg.value()
+        >> @snap(topic, sink=[print, cache])
+        .. def handler(msg, **kwargs):
+        ..     return msg.key(), msg.value()
     """
     c = Conf()
 
@@ -67,9 +67,9 @@ def stream(**kwargs):
     """Start the streams.
 
     Ex:
-        >>> args = {
-        ...     'env': 'DEV',
-        ... }
-        >>> start(**args)
+        >> args = {
+        ..     'env': 'DEV',
+        .. }
+        >> stream(**args)
     """
     Conf().start(**kwargs)
