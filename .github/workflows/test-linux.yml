@@ -1,0 +1,40 @@
+name: Test Python Package
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: abatilo/actions-poetry@v2.1.6
+        with:
+          poetry-version: "1.4.1"
+
+      - name: Install and test package
+        run: |
+          poetry install
+          poetry shell
+          bandit -c pyproject.toml .
+          pydocstyle .
+          pyright .
+          flake8 .
