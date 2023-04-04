@@ -32,8 +32,8 @@ jobs:
 
       - name: Install and test package
         run: |
-          poetry install
           poetry config virtualenvs.in-project true
+          poetry install
           source .venv/bin/activate
           bandit -c pyproject.toml .
           pydocstyle .
