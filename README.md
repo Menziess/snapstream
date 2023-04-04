@@ -34,7 +34,7 @@ Hello 3
 Hello 4
 ```
 
-Here's a more interesting example using `Topic` to transmit and `Cache` to persist data:
+Here's a more comprehensive example using `Topic` to transmit and `Cache` to persist data:
 
 ```py
 from snapstream import Cache, Topic, snap, stream
