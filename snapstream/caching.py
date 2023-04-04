@@ -22,17 +22,10 @@ class Cache:
     ) -> None:
         """Create instance that holds rocksdb reference.
 
-        This configuration setup optimizes for low disk usage (25mb per cf)
-        per LocalTable. When 25mb (target_column_family_size) is reached,
-        the oldest file gets deleted (the first records go out).
-
+        This configuration setup optimizes for low disk usage (25mb per table/cf).
         TTL is set to 4 days, older records may be removed during compaction.
-        Whenever a new column family is created using the `.partition()`
-        function, previously created cf's are deleted
-        if max_column_families is set.
-
-        Some entries below may be ignored because they apply to lvl1 files.
-        When fifo compaction is replaced, these entries are good defaults.
+        When 25mb (target_table_size) is reached, the oldest file gets
+        deleted (the first records go out).
         """
         self.name = name
         options = options or self._default_options(target_table_size)
@@ -53,6 +46,7 @@ class Cache:
         options.set_log_file_time_to_roll(30 * MINUTES)
         options.set_keep_log_file_num(1)
         options.set_max_log_file_size(int(0.1 * MB))
+        options.set_max_manifest_file_size(MB)
         options.set_fifo_compaction_options(compaction_options)
         options.set_compaction_style(DBCompactionStyle.fifo())
         options.set_level_zero_file_num_compaction_trigger(4)
