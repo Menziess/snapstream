@@ -38,11 +38,11 @@ jobs:
           poetry install
 
       - name: Activate environment unix
-        if: ${{ matrix.os == "ubuntu-latest" || matrix.os == "macos-latest" }}
+        if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
         run: source .venv/bin/activate
 
       - name: Activate environment windows
-        if: ${{ matrix.os == "windows-latest" }}
+        if: ${{ matrix.os == 'windows-latest' }}
         run: venv\Scripts\activate.bat
 
       - name: Run linting & tests
