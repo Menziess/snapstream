@@ -30,7 +30,7 @@ jobs:
 
       - uses: abatilo/actions-poetry@v2.1.6
         with:
-          poetry-version: "1.4.1"
+          poetry-version: "1.4.2"
 
       - name: Install package
         run: |
@@ -51,8 +51,8 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           .venv\Scripts\activate.bat
-          bandit -c pyproject.toml .
-          pydocstyle .
-          pyright .
-          flake8 .
-          pytest .
+          python -m bandit -c pyproject.toml .
+          python -m pydocstyle .
+          python -m pyright .
+          python -m flake8 .
+          python -m pytest .

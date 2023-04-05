@@ -20,7 +20,7 @@ jobs:
 
       - uses: abatilo/actions-poetry@v2.1.6
         with:
-          poetry-version: "1.4.1"
+          poetry-version: "1.4.2"
 
       - name: Get latest tag
         id: get_tag
