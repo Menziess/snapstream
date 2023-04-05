@@ -37,16 +37,20 @@ jobs:
           poetry config virtualenvs.in-project true
           poetry install
 
-      - name: Activate environment unix
+      - name: Run linting & tests unix
         if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
-        run: source .venv/bin/activate
-
-      - name: Activate environment windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: .venv\Scripts\activate.bat
-
-      - name: Run linting & tests
         run: |
+          source .venv/bin/activate
+          bandit -c pyproject.toml .
+          pydocstyle .
+          pyright .
+          flake8 .
+          pytest .
+
+      - name: Run linting & tests windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          .venv\Scripts\activate.bat
           bandit -c pyproject.toml .
           pydocstyle .
           pyright .
