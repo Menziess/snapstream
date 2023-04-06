@@ -12,14 +12,16 @@ pip install snapstream
 
 ## Usage
 
-We `snap` the iterable `range(5)` to the handler function:
+We `snap` iterables to user functions, and process them in parallel when we call `stream`:
+
+![demo](res/demo.gif)
+
+We pass the callable `print` to print out the return value. Multiple iterables and sinks can be passed.
 
 ```py
 from snapstream import snap, stream
 
-r = range(5)
-
-@snap(r, sink=[print])
+@snap(range(5), sink=[print])
 def handler(msg):
     return f'Hello {msg}'
 
@@ -34,64 +36,7 @@ Hello 3
 Hello 4
 ```
 
-Here's a more interesting example using `Topic` to transmit and `Cache` to persist data:
-
-```py
-from snapstream import Cache, Topic, snap, stream
-from time import sleep
-
-messages = ('🐌', '🚬', '😁', '🐢', '👑')
-
-# RocksDB is a persistent key-value store
-cache = Cache('db/demo')
-
-# Each topic may have its own configuration
-topic = Topic('demo', conf={
-    'group.id': 'demo',
-    'group.instance.id': 'demo',
-    'bootstrap.servers': 'localhost:29091',
-})
-
-
-@snap(messages, sink=[topic])
-def send_to_topic(msg):
-    # topic acts as a callable
-    return msg
-
-
-@snap(topic, sink=[cache])
-def add_key_and_cache(msg):
-    # and here it acts as an iterable
-    val = msg.value().decode()
-    key = ord(val)
-    return key, val
-
-
-def inspect_cache():
-    keys = (ord(_) for _ in messages)
-    for key in keys:
-        while not (value := cache[key]):
-            sleep(0.1)
-        yield value
-
-
-@snap(inspect_cache(), sink=[print])
-def read_from_cache(msg):
-    return f'Look at this emoji: {msg}'
-
-
-stream()
-```
-
-```sh
-Look at this emoji: 🐌
-Look at this emoji: 🚬
-Look at this emoji: 😁
-Look at this emoji: 🐢
-Look at this emoji: 👑
-```
-
-Spin up a local kafka broker using [docker-compose.yml](docker-compose.yml), and try it out for yourself:
+To try it out for yourself, you can spin up a local kafka broker using [docker-compose.yml](docker-compose.yml), use `localhost:29091` to connect:
 
 ```sh
 docker compose up broker -d
