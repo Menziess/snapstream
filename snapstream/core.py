@@ -13,7 +13,7 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
 
-from snapstream.codecs import Codec
+from snapstream.codecs import ICodec
 from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
 logger = logging.getLogger(__file__)
@@ -39,11 +39,11 @@ class Conf(metaclass=Singleton):
             for el in it:
                 pub.sendMessage(iterable_key, msg=el, kwargs=kwargs)
         except Exception as e:
-            logger.debug(f'Exception in thread {current_thread().getName()}.')
+            logger.debug(f'Exception in thread {current_thread().name}.')
             queue.put(e)
         finally:
             queue.put(None)
-            logger.debug(f'Stopping thread {current_thread().getName()}.')
+            logger.debug(f'Stopping thread {current_thread().name}.')
 
     def start(self, **kwargs):
         """Start the streams."""
@@ -60,8 +60,8 @@ class Conf(metaclass=Singleton):
 
         try:
             for t in threads:
-                logger.debug(f'Spawning thread {t.getName()}.')
-                t.setDaemon(True)
+                logger.debug(f'Spawning thread {t.name}.')
+                t.daemon = True
                 t.start()
             while any(t.is_alive() for t in threads):
                 if exception := queue.get():
@@ -97,7 +97,7 @@ class ITopic(metaclass=ABCMeta):
         name: str,
         conf: Dict[str, Any] = {},
         offset: Optional[int] = None,
-        codec: Optional[Codec] = None,
+        codec: Optional[ICodec] = None,
         **kwargs: Dict[str, Any]
     ) -> None:
         """Initialize topic instance.
@@ -144,7 +144,7 @@ def get_consumer(
     topic: str,
     conf: dict,
     offset=None,
-    codec: Optional[Codec] = None
+    codec: Optional[ICodec] = None
 ) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
@@ -181,7 +181,7 @@ def get_producer(
     topic: str,
     conf: dict,
     dry=False,
-    codec: Optional[Codec] = None
+    codec: Optional[ICodec] = None
 ) -> Iterator[Callable[[Any, Any], Any]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
@@ -218,7 +218,7 @@ class Topic(ITopic):
         name: str,
         conf: dict = {},
         offset: Optional[int] = None,
-        codec: Optional[Codec] = None,
+        codec: Optional[ICodec] = None,
         **kwargs,
     ) -> None:
         """Pass topic related configuration."""

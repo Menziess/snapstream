@@ -1,0 +1,60 @@
+name: Test Python Package
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: abatilo/actions-poetry@v2.1.6
+        with:
+          poetry-version: "1.4.2"
+
+      - name: Install package
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry install
+
+      - name: Activate virtualenv unix
+        if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
+        run: |
+          . .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+
+      - name: Activate virtualenv windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          .\.venv\Scripts\Activate.ps1
+          echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Run linting & tests
+        run: |
+          bandit -c pyproject.toml .
+          pydocstyle .
+          pyright .
+          flake8 .
+          pytest .

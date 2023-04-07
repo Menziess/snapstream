@@ -9,10 +9,15 @@ repos:
       - id: pydocstyle
   - repo: https://github.com/pycqa/bandit
     rev: 1.7.5
-    args: ["-c", "pyproject.toml"]
     hooks:
       - id: bandit
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: [".[toml]"]
   - repo: https://github.com/pycqa/flake8
     rev: 6.0.0
     hooks:
       - id: flake8
+  - repo: https://github.com/python-poetry/poetry
+    rev: 1.4.2
+    hooks:
+      - id: poetry-check
