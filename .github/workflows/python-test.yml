@@ -46,8 +46,8 @@ jobs:
       - name: Activate virtualenv windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          CALL .venv\Scripts\activate.bat
-          echo %PATH% >> $GITHUB_ENV
+          .\.venv\Scripts\Activate.ps1
+          $env:PATH | Out-File -FilePath $GITHUB_ENV -Append
 
       - name: Run linting & tests
         run: |
