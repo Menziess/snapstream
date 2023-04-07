@@ -47,7 +47,7 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           .\.venv\Scripts\Activate.ps1
-          $env:PATH | Out-File -FilePath $GITHUB_ENV -Append
+          echo "PATH=$env:PATH" >> $GITHUB_ENV
 
       - name: Run linting & tests
         run: |
