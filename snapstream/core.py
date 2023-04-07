@@ -243,7 +243,7 @@ class Topic(ITopic):
                     logger.error(e)
                     raise
 
-    def __iter__(self) -> Iterable[Any]:
+    def __iter__(self) -> Iterator[Any]:
         """Consume from topic."""
         c = get_consumer(self.name, self.conf, self.starting_offset, self.codec)
         with c as consumer:

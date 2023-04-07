@@ -1,7 +1,7 @@
 """Snapstream utilities."""
 
 import logging
-from typing import Any, Dict, Protocol
+from typing import Any, Dict
 
 
 class Singleton(type):
@@ -21,14 +21,6 @@ class Singleton(type):
         instance = cls._instances[cls]
         instance.__update__(*args, **kwargs)
         return instance
-
-
-class Sink(Protocol):
-    """Can sink data."""
-
-    def __call__(self, *args: Any) -> None:
-        """Must accept *args."""
-        ...
 
 
 class KafkaIgnoredPropertyFilter(logging.Filter):

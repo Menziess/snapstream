@@ -1,15 +1,17 @@
 
-from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton, Sink
+from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
 
 def test_Singleton():
-    """Should ..."""
-    assert Singleton
+    """Should maintain a single instance of a class."""
+    class MySingleton(metaclass=Singleton):
+        def __update__(self):
+            pass
 
+    a = MySingleton()
+    b = MySingleton()
 
-def test_Sink():
-    """Should ..."""
-    assert Sink
+    assert a is b
 
 
 def test_KafkaIgnoredPropertyFilter():
