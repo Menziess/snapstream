@@ -37,10 +37,14 @@ jobs:
           poetry config virtualenvs.in-project true
           poetry install
 
-      - name: Run linting & tests unix
+      - name: Activate virtualenv
         if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
         run: |
-          source .venv/bin/activate
+          . .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+
+      - name: Run linting & tests
+        run: |
           bandit -c pyproject.toml .
           pydocstyle .
           pyright .
