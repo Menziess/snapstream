@@ -4,6 +4,8 @@ from json import dumps
 
 from pytest import fixture
 
+from snapstream import Cache
+
 avro_schema = str({
     'type': 'record',
     'name': 'testing',
@@ -29,3 +31,9 @@ def raw_msg() -> dict:
 def json_msg() -> bytes:
     """Get serialized json message."""
     return dumps(msg).encode()
+
+
+@fixture
+def cache() -> Cache:
+    """Get Cache instance."""
+    return Cache('tests/db')

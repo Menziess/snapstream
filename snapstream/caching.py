@@ -1,6 +1,5 @@
 """Snapstream caching."""
 
-from functools import partial
 from os import cpu_count, path
 from typing import Any
 
@@ -34,6 +33,10 @@ class Cache:
             for key in Rdict.list_cf(name, options)
         } if path.exists(name + '/CURRENT') else {}
         self.db = Rdict(name, options, column_families, access_type)
+        attribute_names = [_ for _ in dir(self.db) if _[0] != '_']
+        for attribute_name in attribute_names:
+            attr = getattr(self.db, attribute_name)
+            setattr(self, attribute_name, attr)
 
     @staticmethod
     def _default_options(target_table_size: int):
@@ -92,6 +95,6 @@ class Cache:
         """Exit contextmanager."""
         self.db.__exit__(exc_type, exc_val, exc_tb)
 
-    def __getattr__(self, attr):
-        """Redirect to Rdict."""
-        return partial(getattr(Rdict, attr), self.db)
+    # def __getattr__(self, attr):
+    #     """Redirect to Rdict."""
+    #     return partial(getattr(Rdict, attr), self.db)
