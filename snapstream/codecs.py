@@ -15,13 +15,13 @@ logger = logging.getLogger(__name__)
 
 def deserialize_json(msg: bytes) -> dict:
     """Deserialize json message."""
-    return loads(msg.decode('utf-8'))
+    return loads(msg.decode())
 
 
 def serialize_json(msg: dict) -> bytes:
     """Serialize json message."""
     dumped = dumps(msg, default=str)
-    return dumped.encode('utf-8')
+    return dumped.encode()
 
 
 @curry
