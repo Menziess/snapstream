@@ -54,20 +54,6 @@ def serialize_avro(schema: Schema, msg: dict) -> bytes:
 class ICodec(metaclass=ABCMeta):
     """Base class for codecs."""
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Name property."""
-        ...
-
-    @name.setter
-    def name(self, name) -> None:
-        self.name = name
-
-    @name.getter
-    def name(self) -> str:
-        return self.name
-
     @abstractmethod
     def encode(self, obj: Any) -> bytes:
         """Serialize object."""
@@ -82,10 +68,6 @@ class ICodec(metaclass=ABCMeta):
 class JsonCodec(ICodec):
     """Codec for avro messages."""
 
-    def __init__(self, name: str):
-        """Load avro schema."""
-        self.name = name
-
     def encode(self, obj: Any) -> bytes:
         """Serialize message."""
         return serialize_json(obj)
@@ -98,11 +80,10 @@ class JsonCodec(ICodec):
 class AvroCodec(ICodec):
     """Codec for avro messages."""
 
-    def __init__(self, name: str, path: str):
+    def __init__(self, path: str):
         """Load avro schema."""
         with open(path) as a:
             self.schema = parse(a.read())
-        self.name = name
 
     def encode(self, obj: Any) -> bytes:
         """Serialize message."""

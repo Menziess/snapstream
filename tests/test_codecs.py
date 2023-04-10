@@ -1,3 +1,5 @@
+import pytest
+
 from snapstream.codecs import (AvroCodec, ICodec, JsonCodec, deserialize_avro,
                                deserialize_json, serialize_avro,
                                serialize_json)
@@ -24,15 +26,27 @@ def test_serialize_avro(raw_msg, avro_msg, avro_schema):
 
 
 def test_ICodec():
-    """Should ..."""
-    assert ICodec
+    """Should not be able to instantiate incorrectly implemented codec."""
+    class MyFailingCodec(ICodec):
+        def no_encode(self): pass
+        def no_decode(self): pass
+    with pytest.raises(TypeError):
+        MyFailingCodec()  # type: ignore
 
 
-def test_JsonCodec():
-    """Should ..."""
-    assert JsonCodec
+def test_JsonCodec(raw_msg, json_msg):
+    """Should both serialize and deserialize messages."""
+    c = JsonCodec()
+    assert c.encode(raw_msg) == json_msg
+    assert c.decode(json_msg) == raw_msg
 
 
-def test_AvroCodec():
-    """Should ..."""
-    assert AvroCodec
+def test_AvroCodec(raw_msg, avro_msg, avro_schema, mocker):
+    """Should both serialize and deserialize messages."""
+    mock_schema = mocker.mock_open(
+        read_data=avro_schema.canonical_form
+    )
+    mocker.patch('builtins.open', mock_schema)
+    c = AvroCodec('schema/myschema.avsc')
+    assert c.encode(raw_msg) == avro_msg
+    assert c.decode(avro_msg) == raw_msg
