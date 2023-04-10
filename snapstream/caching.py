@@ -1,7 +1,7 @@
 """Snapstream caching."""
 
 import os
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from rocksdict import (AccessType, ColumnFamily, CompactOptions,
                        DBCompactionStyle, DBCompressionType,
@@ -118,7 +118,7 @@ class Cache:
         key: Union[str, int, float, bytes, bool, List[str], List[int], List[float], List[bytes], List[bool]],
         default: Any = None,
         read_opt: Union[ReadOptions, None] = None
-    ) -> Any | None:
+    ) -> Optional[Any]:
         """Get item from database by key."""
         return self.db.get(key, default, read_opt)
 
