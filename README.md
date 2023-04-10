@@ -16,7 +16,7 @@ pip install snapstream
 
 We `snap` iterables to user functions, and process them in parallel when we call `stream`:
 
-![demo](res/demo.gif)
+![demo](https://raw.githubusercontent.com/menziess/snapstream/master/res/demo.gif)
 
 We pass the callable `print` to print out the return value. Multiple iterables and sinks can be passed.
 
