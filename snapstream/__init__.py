@@ -6,7 +6,6 @@ from pubsub import pub
 
 from snapstream.caching import Cache
 from snapstream.core import READ_FROM_END, READ_FROM_START, Conf, Topic
-from snapstream.utils import Sink
 
 __all__ = [
     'snap',
@@ -21,7 +20,7 @@ __all__ = [
 
 def snap(
     *iterable: Iterable,
-    sink: Iterable[Sink] = []
+    sink: Iterable = []
 ):
     """Snaps function to stream.
 

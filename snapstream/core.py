@@ -6,7 +6,8 @@ from contextlib import contextmanager
 from queue import Queue
 from re import sub
 from threading import Thread, current_thread
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional
+from typing import (Any, Callable, Dict, Iterable, Iterator, Optional, Set,
+                    Tuple)
 
 from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -25,7 +26,7 @@ READ_FROM_END = -1
 class Conf(metaclass=Singleton):
     """Defines app configuration."""
 
-    iterables = set()
+    iterables: Set[Tuple[str, Iterable]] = set()
 
     def register_iterables(self, *it):
         """Add iterables to global Conf."""
@@ -144,7 +145,8 @@ def get_consumer(
     topic: str,
     conf: dict,
     offset=None,
-    codec: Optional[ICodec] = None
+    codec: Optional[ICodec] = None,
+    poll_timeout: float = 1.0
 ) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
@@ -161,7 +163,7 @@ def get_consumer(
 
         logger.debug(f'Consuming from topic: {topic}.')
         while True:
-            msg = c.poll(1.0)
+            msg = c.poll(poll_timeout)
             if msg is None:
                 continue
             if err := msg.error():
@@ -181,8 +183,9 @@ def get_producer(
     topic: str,
     conf: dict,
     dry=False,
-    codec: Optional[ICodec] = None
-) -> Iterator[Callable[[Any, Any], Any]]:
+    codec: Optional[ICodec] = None,
+    flush_timeout: float = -1.0
+) -> Iterator[Callable[[Any, Any], int]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
 
@@ -194,20 +197,20 @@ def get_producer(
         else:
             logger.debug(f'Produced to topic: {topic}.')
 
-    def produce(key, val, *args, **kwargs):
+    def produce(key, val, *args, **kwargs) -> int:
         if codec:
             logger.debug(f'Encoding using codec: {topic}.')
             val = codec.encode(val)
         if dry:
             logger.warning(f'Skipped sending message to {topic} [dry=True].')
-            return
+            return 0
         p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=_acked)
         # Immediately send every message
-        p.flush()
+        return p.flush(flush_timeout)
 
     yield produce
 
-    p.flush()
+    p.flush(flush_timeout)
 
 
 class Topic(ITopic):
@@ -219,6 +222,8 @@ class Topic(ITopic):
         conf: dict = {},
         offset: Optional[int] = None,
         codec: Optional[ICodec] = None,
+        flush_timeout: float = -1.0,
+        poll_timeout: float = 1.0,
         **kwargs,
     ) -> None:
         """Pass topic related configuration."""
@@ -226,6 +231,8 @@ class Topic(ITopic):
         self.name = name
         self.conf = {**c.conf, **conf}
         self.starting_offset = offset
+        self.flush_timeout = flush_timeout
+        self.poll_timeout = poll_timeout
         self.producer = None
         self.codec = codec
 
@@ -243,17 +250,18 @@ class Topic(ITopic):
                     logger.error(e)
                     raise
 
-    def __iter__(self) -> Iterable[Any]:
+    def __iter__(self) -> Iterator[Any]:
         """Consume from topic."""
-        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec)
+        c = get_consumer(self.name, self.conf, self.starting_offset,
+                         self.codec, self.poll_timeout)
         with c as consumer:
             for msg in consumer:
                 yield msg
 
-    def __call__(self, val, key=None, * args, dry=False, **kwargs) -> None:
+    def __call__(self, val, key=None, *args, dry=False, **kwargs) -> None:
         """Produce to topic."""
         self.producer = (
             self.producer or
-            get_producer(self.name, self.conf, dry, self.codec).__enter__()
+            get_producer(self.name, self.conf, dry, self.codec, self.flush_timeout).__enter__()
         )
         self.producer(key, val, *args, **kwargs)

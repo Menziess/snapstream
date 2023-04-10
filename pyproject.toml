@@ -6,7 +6,6 @@ authors = ["Menziess <stefan_schenk@hotmail.com>"]
 readme = "README.md"
 homepage = "https://github.com/Menziess/snapstream"
 
-
 [tool.poetry.dependencies]
 python = "^3.8.1"
 confluent-kafka = "^2.0.2"
@@ -25,6 +24,7 @@ bandit = "^1.7.5"
 pytest = "^7.2.2"
 pytest-cov = "^4.0.0"
 pre-commit = "^3.2.1"
+pytest-mock = "^3.10.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -40,3 +40,7 @@ exclude_dirs = ["tests"]
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
+testpaths = [
+    "snapstream",
+    "tests",
+]
