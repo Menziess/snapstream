@@ -6,7 +6,8 @@ from contextlib import contextmanager
 from queue import Queue
 from re import sub
 from threading import Thread, current_thread
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional
+from typing import (Any, Callable, Dict, Iterable, Iterator, Optional, Set,
+                    Tuple)
 
 from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -25,7 +26,7 @@ READ_FROM_END = -1
 class Conf(metaclass=Singleton):
     """Defines app configuration."""
 
-    iterables = set()
+    iterables: Set[Tuple[str, Iterable]] = set()
 
     def register_iterables(self, *it):
         """Add iterables to global Conf."""

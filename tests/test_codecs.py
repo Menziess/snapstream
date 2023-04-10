@@ -28,8 +28,7 @@ def test_serialize_avro(raw_msg, avro_msg, avro_schema):
 def test_ICodec():
     """Should not be able to instantiate incorrectly implemented codec."""
     class MyFailingCodec(ICodec):
-        def no_encode(self): pass
-        def no_decode(self): pass
+        pass
     with pytest.raises(TypeError):
         MyFailingCodec()  # type: ignore
 
