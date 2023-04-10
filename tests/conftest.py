@@ -1,6 +1,7 @@
 """Common testing functionalities."""
 
 from json import dumps
+from typing import Iterator
 
 from avro.schema import Schema, parse
 from pytest import fixture
@@ -55,6 +56,11 @@ def avro_schema() -> Schema:
 
 
 @fixture
-def cache() -> Cache:
-    """Get Cache instance."""
-    return Cache('tests/db')
+def cache() -> Iterator[Cache]:
+    """Get Cache instance that automatically cleans itself."""
+    c = Cache('tests/db')
+    try:
+        yield c
+    finally:
+        c.close()
+        c.destroy()
