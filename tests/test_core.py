@@ -41,14 +41,14 @@ def test_ITopic():
         MyFailingTopic()  # type: ignore
 
 
-def test_get_consumer(mocker):
-    """Should ..."""
-    with get_consumer('test', {'group.id': 'test'}) as c:
+def test_get_consumer():
+    """Should return an interable."""
+    with get_consumer('test', {'group.id': 'test'}, poll_timeout=0) as c:
         assert isinstance(c, Iterable)
 
 
 def test_get_producer():
-    """Should ..."""
+    """Should return a callable."""
     with get_producer('test', {}, flush_timeout=0) as p:
         assert isinstance(p, Callable)
         unsent = p('test', 'test')
