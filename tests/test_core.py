@@ -1,3 +1,5 @@
+from typing import Callable, Iterable
+
 import pytest
 from pubsub import pub
 
@@ -39,14 +41,18 @@ def test_ITopic():
         MyFailingTopic()  # type: ignore
 
 
-def test_get_consumer():
+def test_get_consumer(mocker):
     """Should ..."""
-    assert get_consumer
+    with get_consumer('test', {'group.id': 'test'}) as c:
+        assert isinstance(c, Iterable)
 
 
 def test_get_producer():
     """Should ..."""
-    assert get_producer
+    with get_producer('test', {}, flush_timeout=0) as p:
+        assert isinstance(p, Callable)
+        unsent = p('test', 'test')
+        assert unsent == 1
 
 
 def test_Topic():
