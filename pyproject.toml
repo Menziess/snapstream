@@ -4,7 +4,9 @@ version = "0.0.0.dev0"
 description = "Streamline your Kafka data processing, this tool aims to standardize streaming data from multiple Kafka clusters. With a pub-sub approach, multiple functions can easily subscribe to incoming messages, serialization can be specified per topic, and data is automatically processed by data sink functions."
 authors = ["Menziess <stefan_schenk@hotmail.com>"]
 readme = "README.md"
-homepage = "https://github.com/Menziess/snapstream"
+repository = "https://github.com/Menziess/snapstream"
+license = "MIT"
+keywords = ["kafka", "pubsub"]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
