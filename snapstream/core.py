@@ -178,35 +178,35 @@ def get_consumer(
         c.close()
 
 
+def _producer_callback(err, msg):
+    if err is not None:
+        logger.error(f'Failed to deliver message: {err}.')
+        # Raise exception by default
+        raise KafkaException(err)
+    else:
+        logger.debug(f'Produced to topic: {msg.topic()}.')
+
+
 @contextmanager
 def get_producer(
     topic: str,
     conf: dict,
     dry=False,
     codec: Optional[ICodec] = None,
-    flush_timeout: float = -1.0
-) -> Iterator[Callable[[Any, Any], int]]:
+    flush_timeout: float = -1.0,
+    callback=_producer_callback
+) -> Iterator[Callable[[Any, Any], None]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
 
-    def _acked(err, msg):
-        if err is not None:
-            logger.error(f'Failed to deliver message: {err}.')
-            # Bubble up every single error
-            raise KafkaException(err)
-        else:
-            logger.debug(f'Produced to topic: {topic}.')
-
-    def produce(key, val, *args, **kwargs) -> int:
+    def produce(key, val, *args, **kwargs):
         if codec:
             logger.debug(f'Encoding using codec: {topic}.')
             val = codec.encode(val)
         if dry:
             logger.warning(f'Skipped sending message to {topic} [dry=True].')
-            return 0
-        p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=_acked)
-        # Immediately send every message
-        return p.flush(flush_timeout)
+            return
+        p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=callback)
 
     yield produce
 
