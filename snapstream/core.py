@@ -140,13 +140,31 @@ class ITopic(metaclass=ABCMeta):
         raise NotImplementedError
 
 
+def _consumer_handler(c, conf, poll_timeout, codec):
+    while True:
+        msg = c.poll(poll_timeout)
+        if msg is None:
+            continue
+        if err := msg.error():
+            raise KafkaException(err)
+        if codec:
+            decoded_val = codec.decode(msg.value())
+            msg.set_value(decoded_val)
+
+        yield msg
+
+        if conf.get('enable.auto.commit') is False:
+            c.commit()
+
+
 @contextmanager
 def get_consumer(
     topic: str,
     conf: dict,
     offset=None,
     codec: Optional[ICodec] = None,
-    poll_timeout: float = 1.0
+    poll_timeout: float = 1.0,
+    poller=_consumer_handler
 ) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
@@ -160,25 +178,16 @@ def get_consumer(
 
         logger.debug(f'Subscribing to topic: {topic}.')
         c.subscribe([topic], on_assign=on_assign)
-
         logger.debug(f'Consuming from topic: {topic}.')
-        while True:
-            msg = c.poll(poll_timeout)
-            if msg is None:
-                continue
-            if err := msg.error():
-                raise KafkaException(err)
-            if codec:
-                decoded_val = codec.decode(msg.value())
-                msg.set_value(decoded_val)
-            yield msg
+        yield from poller(c, conf, poll_timeout, codec)
+
     try:
         yield consume()
     finally:
         c.close()
 
 
-def _producer_callback(err, msg):
+def _producer_handler(err, msg):
     if err is not None:
         logger.error(f'Failed to deliver message: {err}.')
         # Raise exception by default
@@ -194,7 +203,7 @@ def get_producer(
     dry=False,
     codec: Optional[ICodec] = None,
     flush_timeout: float = -1.0,
-    callback=_producer_callback
+    callback=_producer_handler
 ) -> Iterator[Callable[[Any, Any], None]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
