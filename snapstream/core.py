@@ -232,8 +232,7 @@ class Topic(ITopic):
         offset: Optional[int] = None,
         codec: Optional[ICodec] = None,
         flush_timeout: float = -1.0,
-        poll_timeout: float = 1.0,
-        **kwargs,
+        poll_timeout: float = 1.0
     ) -> None:
         """Pass topic related configuration."""
         c = Conf()
@@ -245,10 +244,10 @@ class Topic(ITopic):
         self.producer = None
         self.codec = codec
 
-    def create_topic(self, name: str, *args, **kwargs) -> None:
+    def create_topic(self, *args, **kwargs) -> None:
         """Create topic."""
         admin = AdminClient(self.conf)
-        for t, f in admin.create_topics([NewTopic(name, *args, **kwargs)]).items():
+        for t, f in admin.create_topics([NewTopic(self.name, *args, **kwargs)]).items():
             try:
                 f.result()
                 logger.debug(f"Topic {t} created.")
