@@ -13,6 +13,7 @@ from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
+from toolz import pipe
 
 from snapstream.codecs import ICodec
 from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
@@ -141,6 +142,12 @@ class ITopic(metaclass=ABCMeta):
 
 
 def _consumer_handler(c, conf, poll_timeout, codec):
+    manual_commit = pipe(
+        conf.get('enable.auto.commit'),
+        str,
+        str.lower
+    ) == 'false'
+
     while True:
         msg = c.poll(poll_timeout)
         if msg is None:
@@ -153,7 +160,7 @@ def _consumer_handler(c, conf, poll_timeout, codec):
 
         yield msg
 
-        if conf.get('enable.auto.commit') is False:
+        if manual_commit:
             c.commit()
 
 
