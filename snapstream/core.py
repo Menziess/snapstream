@@ -239,7 +239,8 @@ class Topic(ITopic):
         offset: Optional[int] = None,
         codec: Optional[ICodec] = None,
         flush_timeout: float = -1.0,
-        poll_timeout: float = 1.0
+        poll_timeout: float = 1.0,
+        dry: bool = False
     ) -> None:
         """Pass topic related configuration."""
         c = Conf()
@@ -250,6 +251,7 @@ class Topic(ITopic):
         self.poll_timeout = poll_timeout
         self.producer = None
         self.codec = codec
+        self.dry = dry
 
     def create_topic(self, *args, **kwargs) -> None:
         """Create topic."""
@@ -273,12 +275,12 @@ class Topic(ITopic):
             for msg in consumer:
                 yield msg
 
-    def __call__(self, val, key=None, *args, dry=False, **kwargs) -> None:
+    def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
         if not (key or val):
             return
         self.producer = (
             self.producer or
-            get_producer(self.name, self.conf, dry, self.codec, self.flush_timeout).__enter__()
+            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout).__enter__()
         )
         self.producer(key, val, *args, **kwargs)
