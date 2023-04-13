@@ -47,12 +47,11 @@ def test_get_consumer():
         assert isinstance(c, Iterable)
 
 
-def test_get_producer():
+def test_get_producer(mocker):
     """Should return a callable."""
     with get_producer('test', {}, flush_timeout=0) as p:
         assert isinstance(p, Callable)
-        unsent = p('test', 'test')
-        assert unsent == 1
+        p('test', 'test')
 
 
 def test_Topic():

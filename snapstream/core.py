@@ -13,6 +13,7 @@ from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 from pubsub import pub
+from toolz import pipe
 
 from snapstream.codecs import ICodec
 from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
@@ -140,13 +141,37 @@ class ITopic(metaclass=ABCMeta):
         raise NotImplementedError
 
 
+def _consumer_handler(c, conf, poll_timeout, codec):
+    manual_commit = pipe(
+        conf.get('enable.auto.commit'),
+        str,
+        str.lower
+    ) == 'false'
+
+    while True:
+        msg = c.poll(poll_timeout)
+        if msg is None:
+            continue
+        if err := msg.error():
+            raise KafkaException(err)
+        if codec:
+            decoded_val = codec.decode(msg.value())
+            msg.set_value(decoded_val)
+
+        yield msg
+
+        if manual_commit:
+            c.commit()
+
+
 @contextmanager
 def get_consumer(
     topic: str,
     conf: dict,
     offset=None,
     codec: Optional[ICodec] = None,
-    poll_timeout: float = 1.0
+    poll_timeout: float = 1.0,
+    poller=_consumer_handler
 ) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
@@ -160,22 +185,22 @@ def get_consumer(
 
         logger.debug(f'Subscribing to topic: {topic}.')
         c.subscribe([topic], on_assign=on_assign)
-
         logger.debug(f'Consuming from topic: {topic}.')
-        while True:
-            msg = c.poll(poll_timeout)
-            if msg is None:
-                continue
-            if err := msg.error():
-                raise KafkaException(err)
-            if codec:
-                decoded_val = codec.decode(msg.value())
-                msg.set_value(decoded_val)
-            yield msg
+        yield from poller(c, conf, poll_timeout, codec)
+
     try:
         yield consume()
     finally:
         c.close()
+
+
+def _producer_handler(err, msg):
+    if err is not None:
+        logger.error(f'Failed to deliver message: {err}.')
+        # Raise exception by default
+        raise KafkaException(err)
+    else:
+        logger.debug(f'Produced to topic: {msg.topic()}.')
 
 
 @contextmanager
@@ -184,29 +209,20 @@ def get_producer(
     conf: dict,
     dry=False,
     codec: Optional[ICodec] = None,
-    flush_timeout: float = -1.0
-) -> Iterator[Callable[[Any, Any], int]]:
+    flush_timeout: float = -1.0,
+    callback=_producer_handler
+) -> Iterator[Callable[[Any, Any], None]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
 
-    def _acked(err, msg):
-        if err is not None:
-            logger.error(f'Failed to deliver message: {err}.')
-            # Bubble up every single error
-            raise KafkaException(err)
-        else:
-            logger.debug(f'Produced to topic: {topic}.')
-
-    def produce(key, val, *args, **kwargs) -> int:
+    def produce(key, val, *args, **kwargs):
         if codec:
             logger.debug(f'Encoding using codec: {topic}.')
             val = codec.encode(val)
         if dry:
             logger.warning(f'Skipped sending message to {topic} [dry=True].')
-            return 0
-        p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=_acked)
-        # Immediately send every message
-        return p.flush(flush_timeout)
+            return
+        p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=callback)
 
     yield produce
 
@@ -224,7 +240,7 @@ class Topic(ITopic):
         codec: Optional[ICodec] = None,
         flush_timeout: float = -1.0,
         poll_timeout: float = 1.0,
-        **kwargs,
+        dry: bool = False
     ) -> None:
         """Pass topic related configuration."""
         c = Conf()
@@ -235,11 +251,12 @@ class Topic(ITopic):
         self.poll_timeout = poll_timeout
         self.producer = None
         self.codec = codec
+        self.dry = dry
 
-    def create_topic(self, name: str, *args, **kwargs) -> None:
+    def create_topic(self, *args, **kwargs) -> None:
         """Create topic."""
         admin = AdminClient(self.conf)
-        for t, f in admin.create_topics([NewTopic(name, *args, **kwargs)]).items():
+        for t, f in admin.create_topics([NewTopic(self.name, *args, **kwargs)]).items():
             try:
                 f.result()
                 logger.debug(f"Topic {t} created.")
@@ -258,10 +275,12 @@ class Topic(ITopic):
             for msg in consumer:
                 yield msg
 
-    def __call__(self, val, key=None, *args, dry=False, **kwargs) -> None:
+    def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
+        if not (key or val):
+            return
         self.producer = (
             self.producer or
-            get_producer(self.name, self.conf, dry, self.codec, self.flush_timeout).__enter__()
+            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout).__enter__()
         )
         self.producer(key, val, *args, **kwargs)

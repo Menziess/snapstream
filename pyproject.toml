@@ -46,3 +46,6 @@ testpaths = [
     "snapstream",
     "tests",
 ]
+markers = [
+    "serial"
+]
