@@ -60,7 +60,7 @@ class ICodec(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def decode(self, s: bytes) -> dict:
+    def decode(self, s: bytes) -> object:
         """Deserialize object."""
         raise NotImplementedError
 
