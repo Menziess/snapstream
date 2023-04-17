@@ -240,6 +240,8 @@ class Topic(ITopic):
         codec: Optional[ICodec] = None,
         flush_timeout: float = -1.0,
         poll_timeout: float = 1.0,
+        callback=_producer_handler,
+        poller=_consumer_handler,
         dry: bool = False
     ) -> None:
         """Pass topic related configuration."""
@@ -250,6 +252,8 @@ class Topic(ITopic):
         self.flush_timeout = flush_timeout
         self.poll_timeout = poll_timeout
         self.producer = None
+        self.callback = callback
+        self.poller = poller
         self.codec = codec
         self.dry = dry
 
@@ -269,8 +273,7 @@ class Topic(ITopic):
 
     def __iter__(self) -> Iterator[Any]:
         """Consume from topic."""
-        c = get_consumer(self.name, self.conf, self.starting_offset,
-                         self.codec, self.poll_timeout)
+        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec, self.poll_timeout, self.poller)
         with c as consumer:
             for msg in consumer:
                 yield msg
@@ -281,6 +284,6 @@ class Topic(ITopic):
             return
         self.producer = (
             self.producer or
-            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout).__enter__()
+            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.callback).__enter__()
         )
         self.producer(key, val, *args, **kwargs)
