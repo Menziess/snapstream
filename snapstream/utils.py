@@ -1,7 +1,71 @@
 """Snapstream utilities."""
 
 import logging
-from typing import Any, Dict
+from os import environ, getenv, listdir
+from pathlib import Path
+from re import match, sub
+from typing import Any, Dict, Optional
+
+from toolz.curried import compose, curry
+
+logger = logging.getLogger(__name__)
+
+
+def get_variable(
+    secret: str,
+    secrets_base_path='/etc/secrets',
+    required=False
+) -> Optional[str]:
+    """Get environment or file variable."""
+    def getfilesecret(filepath):
+        with filepath.open('r') as f:
+            return f.read()
+    filepath = Path(secrets_base_path) / secret
+    try:
+        return getenv(secret) or getfilesecret(filepath)
+    except FileNotFoundError as e:
+        logger.warning(
+            f'Environment variable "{secret}" or file: '
+            f'"{filepath}" not found (optional={not required}).')
+        if required:
+            raise e
+        return None
+
+
+def get_prefixed_variables(
+    prefix: str,
+    secrets_base_path='/etc/secrets',
+    key_sep='.'
+) -> dict:
+    """Get environment or file variables having prefix.
+
+    >>> environ['TEST_EXAMPLE'] = 'test'
+    >>> get_secrets_dict(prefix='TEST')
+    {'test.example': 'test'}
+    >>> del environ['TEST_EXAMPLE']
+    """
+    candidates = list(environ)
+    try:
+        candidates += listdir(secrets_base_path)
+    except FileNotFoundError as e:
+        logger.warning((
+            f"Function `{get_prefixed_variables.__name__}()` can't "
+            f"look up file secrets: {e}."
+        ))
+    filter_func = compose(
+        curry(match)(prefix.lower()),
+        str.lower
+    )
+    matches = filter(filter_func, candidates)
+    normalize_name = compose(
+        curry(sub)('[^0-9a-zA-Z]+', key_sep),
+        str.lower
+    )
+    variables = {
+        normalize_name(name): get_variable(name, secrets_base_path)
+        for name in matches
+    }
+    return variables
 
 
 class Singleton(type):
