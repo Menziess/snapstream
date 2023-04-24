@@ -24,8 +24,10 @@ def get_args(args=argv[1:]):
                        help='Name of the topic to consume from.')
     topic.add_argument('-s', '--schema', type=str,
                        help='Path to avro schema file.')
-    topic.add_argument('-k', '--key-regex', type=str,
+    topic.add_argument('-k', '--key-filter', type=str,
                        help='Regex used to filter messages by key.')
+    topic.add_argument('-v', '--val-filter', type=str,
+                       help='Regex used to filter messages by value.')
     topic.add_argument('-c', '--columns', type=str,
                        help='A list of column names, ex: "time,date,pk".')
     topic.add_argument('-o', '--offset', type=int, default=READ_FROM_END,
@@ -37,7 +39,7 @@ def get_args(args=argv[1:]):
     return parser.parse_args(args)
 
 
-def filter_topic_by_key(regex: str, key: Optional[str]) -> bool:
+def regex_filter(regex: str, key: Optional[str]) -> bool:
     """Check whether key matches regex filter."""
     if regex and key:
         return bool(search(regex, key))
@@ -58,7 +60,8 @@ def inspect_topic(args: Namespace):
         conf['group.instance.id'] = '$Default'
 
     schema = AvroCodec(args.schema) if args.schema else None
-    regex_filter = curry(filter_topic_by_key)(args.key_regex)
+    key_filter = curry(regex_filter)(args.key_filter)
+    val_filter = curry(regex_filter)(args.val_filter)
 
     try:
         for msg in Topic(args.name, conf, args.offset, schema):
@@ -71,7 +74,7 @@ def inspect_topic(args: Namespace):
             key = msg.key().decode() if msg.key() is not None else ''
             offset = msg.offset()
             val = msg.value()
-            if regex_filter(key):
+            if key_filter(str(key)) and val_filter(str(val)):
                 print()
                 print('>>> timestamp:', timestamp)
                 print('>>> offset:', offset)
