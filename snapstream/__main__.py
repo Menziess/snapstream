@@ -19,22 +19,22 @@ def get_args(args=argv[1:]):
     parser = ArgumentParser('snapstream')
     subparsers = parser.add_subparsers(dest='action', required=True)
 
-    topic = subparsers.add_parser('topic', help='Read messages from topic.')
+    topic = subparsers.add_parser('topic', help='read messages from Topic')
     topic.add_argument('name', type=str,
-                       help='Name of the topic to consume from.')
+                       help='topicname')
     topic.add_argument('-s', '--schema', type=str,
-                       help='Path to avro schema file.')
+                       help='path to avro schema file')
     topic.add_argument('-k', '--key-filter', type=str,
-                       help='Regex used to filter messages by key.')
+                       help='regex used to filter messages by key')
     topic.add_argument('-v', '--val-filter', type=str,
-                       help='Regex used to filter messages by value.')
+                       help='regex used to filter messages by value')
     topic.add_argument('-c', '--columns', type=str,
-                       help='A list of column names, ex: "time,date,pk".')
+                       help='list of columns to extract from message, ex: "time,date,pk"')
     topic.add_argument('-o', '--offset', type=int, default=READ_FROM_END,
-                       help='Use -2/-1 to read from start/end respectively.')
+                       help='offset to start reading from, ex: -2/-1/3025 (start/end/other)')
 
-    cache = subparsers.add_parser('cache', help='Read records from cache.')
-    cache.add_argument('path', type=str, help='Path of the cache files.')
+    cache = subparsers.add_parser('cache', help='read records from Cache')
+    cache.add_argument('path', type=str, help='path of the cache files')
 
     return parser.parse_args(args)
 
