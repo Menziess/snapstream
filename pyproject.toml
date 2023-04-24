@@ -9,7 +9,7 @@ license = "MIT"
 keywords = ["kafka", "pubsub"]
 
 [tool.poetry.scripts]
-snapstream = 'snapstream.cli:main'
+snapstream = 'snapstream.__main__:main'
 
 [tool.poetry.dependencies]
 python = "^3.8.1"

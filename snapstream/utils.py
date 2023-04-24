@@ -6,7 +6,7 @@ from pathlib import Path
 from re import match, sub
 from typing import Any, Dict, Optional
 
-from toolz.curried import compose, curry
+from toolz.curried import compose, curry, last
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,10 @@ def get_prefixed_variables(
         str.lower
     )
     variables = {
-        normalize_name(name): get_variable(name, secrets_base_path)
+        last(
+            normalize_name(name)
+            .split(normalize_name(prefix))
+        ): get_variable(name, secrets_base_path)
         for name in matches
     }
     return variables

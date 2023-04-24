@@ -4,8 +4,8 @@ import logging
 from argparse import ArgumentParser
 from sys import argv
 
+from snapstream import READ_FROM_END, Conf, Topic
 from snapstream.codecs import AvroCodec
-from snapstream.core import READ_FROM_END, get_consumer
 from snapstream.utils import get_prefixed_variables
 
 BASIC_FORMAT = '%(levelname)s:%(name)s:%(message)s'
@@ -31,6 +31,7 @@ def main():
     """Run main program."""
     args = get_args()
     logging.basicConfig(format=args.logformat, level=args.loglevel.upper())
+    Conf(get_prefixed_variables('DEFAULT_'))
     conf = get_prefixed_variables(args.topic)
 
     if 'group.id' not in conf:
@@ -38,13 +39,12 @@ def main():
 
     schema = AvroCodec(args.schema) if args.schema else None
 
-    with get_consumer(args.topic, conf, args.offset, schema) as consumer:
-        for msg in consumer:
-            print(msg)
+    try:
+        for msg in Topic(args.topic, conf, args.offset, schema):
+            print(msg.value())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
+    main()
