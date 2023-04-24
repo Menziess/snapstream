@@ -18,6 +18,8 @@ def get_args(args=argv[1:]):
     """Get user arguments."""
     parser = ArgumentParser('snapstream')
     subparsers = parser.add_subparsers(dest='action', required=True)
+    parser.add_argument('--secrets-base-path', type=str, default='',
+                        help='folder containing secret files')
 
     topic = subparsers.add_parser('topic', help='read messages from Topic')
     topic.add_argument('name', type=str,
@@ -51,8 +53,10 @@ def regex_filter(regex: str, key: Optional[str]) -> bool:
 def inspect_topic(args: Namespace):
     """Read messages from topic."""
     args = get_args()
-    Conf(get_prefixed_variables('DEFAULT_'))
-    conf = get_prefixed_variables(args.name)
+    print(f'Using environment variables starting with "DEFAULT_" and "{args.name.upper()}_".')
+    Conf(get_prefixed_variables('DEFAULT_', args.secrets_base_path))
+    conf = get_prefixed_variables(f'{args.name}_', args.secrets_base_path)
+    print({**Conf().conf, **conf})
 
     if 'group.id' not in conf:
         conf['group.id'] = '$Default'

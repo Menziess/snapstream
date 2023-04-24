@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def get_variable(
     secret: str,
-    secrets_base_path='/etc/secrets',
+    secrets_base_path='',
     required=False
 ) -> Optional[str]:
     """Get environment or file variable."""
@@ -22,7 +22,10 @@ def get_variable(
             return f.read()
     filepath = Path(secrets_base_path) / secret
     try:
-        return getenv(secret) or getfilesecret(filepath)
+        return getenv(secret) or (
+            getfilesecret(filepath)
+            if secrets_base_path else None
+        )
     except FileNotFoundError as e:
         logger.warning(
             f'Environment variable "{secret}" or file: '
@@ -34,7 +37,7 @@ def get_variable(
 
 def get_prefixed_variables(
     prefix: str,
-    secrets_base_path='/etc/secrets',
+    secrets_base_path='',
     key_sep='.'
 ) -> dict:
     """Get environment or file variables having prefix.
@@ -46,7 +49,7 @@ def get_prefixed_variables(
     """
     candidates = list(environ)
     try:
-        candidates += listdir(secrets_base_path)
+        candidates += listdir(secrets_base_path) if secrets_base_path else []
     except FileNotFoundError as e:
         logger.warning((
             f"Function `{get_prefixed_variables.__name__}()` can't "
