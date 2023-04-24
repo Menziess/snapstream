@@ -39,10 +39,10 @@ def get_prefixed_variables(
 ) -> dict:
     """Get environment or file variables having prefix.
 
-    >>> environ['TEST_EXAMPLE'] = 'test'
-    >>> get_secrets_dict(prefix='TEST')
-    {'test.example': 'test'}
-    >>> del environ['TEST_EXAMPLE']
+    >>> environ['DEFAULT_EXAMPLE'] = 'test'
+    >>> get_prefixed_variables(prefix='DEFAULT_')
+    {'example': 'test'}
+    >>> del environ['DEFAULT_EXAMPLE']
     """
     candidates = list(environ)
     try:
