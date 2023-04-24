@@ -8,6 +8,9 @@ repository = "https://github.com/Menziess/snapstream"
 license = "MIT"
 keywords = ["kafka", "pubsub"]
 
+[tool.poetry.scripts]
+snapstream = 'snapstream.cli:main'
+
 [tool.poetry.dependencies]
 python = "^3.8.1"
 confluent-kafka = "^2.0.2"
