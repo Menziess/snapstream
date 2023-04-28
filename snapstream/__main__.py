@@ -12,6 +12,7 @@ from re import search
 from sys import argv, exit
 from typing import Optional
 
+from rocksdict import AccessType
 from toolz import curry
 
 from snapstream import READ_FROM_END, Cache, Topic
@@ -173,7 +174,10 @@ def inspect_topic(conf: dict, args: Namespace):
 
 def inspect_cache(conf: dict, args: Namespace):
     """Read records from cache."""
-    cache = Cache(args.path)
+    cache = Cache(
+        args.path,
+        access_type=AccessType.read_only(),
+    )
     key_filter = curry(regex_filter)(args.key_filter)
     val_filter = curry(regex_filter)(args.val_filter)
     for key, val in cache.items():
@@ -182,7 +186,6 @@ def inspect_cache(conf: dict, args: Namespace):
                 raise ValueError(f'Columns could not be extracted from {type(val)}: {val}')
             print()
             print('>>> key:', key)
-            print(val)
             print(val) if not args.columns else print({
                 k: v for k, v in val.items() if k in args.columns.split(',')
             })
