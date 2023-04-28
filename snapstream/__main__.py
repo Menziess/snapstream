@@ -6,7 +6,7 @@ This tool can be used to inspect kafka streams or rocksdb databases.
 from argparse import ArgumentParser, Namespace
 from datetime import datetime as dt
 from datetime import timezone
-from json import dump, load
+from json import dump, dumps, load
 from os import path
 from re import search
 from sys import argv, exit
@@ -16,7 +16,7 @@ from toolz import curry
 
 from snapstream import READ_FROM_END, Cache, Topic
 from snapstream.codecs import AvroCodec
-from snapstream.utils import get_variable
+from snapstream.utils import folder_size, get_variable
 
 DEFAULT_CONFIG_PATH = '~/'
 CONFIG_FILENAME = '.snapstreamcfg'
@@ -48,11 +48,13 @@ def get_args(args=argv[1:]) -> Namespace:
     cache = subparsers.add_parser('cache', help='read records from Cache')
     cache.add_argument('path', type=str, help='path of the cache files')
     cache.add_argument('-k', '--key-filter', type=str,
-                       help='regex used to filter messages by key')
+                       help='regex used to filter records by key')
     cache.add_argument('-v', '--val-filter', type=str,
-                       help='regex used to filter messages by value')
+                       help='regex used to filter records by value')
     cache.add_argument('-c', '--columns', type=str,
                        help='list of columns to extract from message (if dict), ex: "time,date,pk"')
+    cache.add_argument('--stats', action='store_true',
+                       help='print additional database statistics')
 
     return parser.parse_args(args)
 
@@ -184,6 +186,12 @@ def inspect_cache(conf: dict, args: Namespace):
             print(val) if not args.columns else print({
                 k: v for k, v in val.items() if k in args.columns.split(',')
             })
+
+    if args.stats:
+        print()
+        print('Statistics:')
+        print(dumps(cache.live_files(), indent=4))
+        print('Folder size:', folder_size(args.path + '/**/*', 'mb'), 'mb')
 
 
 def main():

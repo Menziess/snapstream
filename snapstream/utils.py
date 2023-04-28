@@ -74,6 +74,16 @@ def get_prefixed_variables(
     return variables
 
 
+def folder_size(folder: str, unit='mb'):
+    """Get size of folder."""
+    exponents_map = {'bytes': 0, 'kb': 1, 'mb': 2, 'gb': 3}
+    return round(
+        sum(f.stat().st_size for f in Path('.').glob(folder) if f.is_file())
+        / 1024 ** exponents_map[unit],
+        3
+    )
+
+
 class Singleton(type):
     """Maintain a single instance of a class."""
 
