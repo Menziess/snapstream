@@ -44,6 +44,19 @@ To try it out for yourself, spin up a local kafka broker with [docker-compose.ym
 docker compose up broker -d
 ```
 
+Use the cli tool to inspect Topic/Cache:
+
+```sh
+snapstream topic emoji --offset -2
+```
+
+```
+>>> timestamp: 2023-04-28T17:31:51.775000+00:00
+>>> offset: 0
+>>> key:
+🏆
+```
+
 ## Features
 
 - [`snapstream.snap`](snapstream/__init__.py): bind streams (iterables) and sinks (callables) to user defined handler functions

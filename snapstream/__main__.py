@@ -166,7 +166,7 @@ def inspect_topic(conf: dict, args: Namespace):
             print('>>> timestamp:', timestamp)
             print('>>> offset:', offset)
             print('>>> key:', key)
-            print(val) if not args.columns else print({
+            print(val.decode()) if not args.columns else print({
                 k: v for k, v in val.items() if k in args.columns.split(',')
             })
 
