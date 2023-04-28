@@ -1,5 +1,6 @@
 """Snapstream public objects."""
 
+from inspect import signature
 from typing import Iterable
 
 from pubsub import pub
@@ -46,10 +47,12 @@ def snap(
 
     def _deco(f):
         def _handler(msg, kwargs):
-            try:
+            parameters = signature(f).parameters.values()
+            if any(p.kind == p.VAR_KEYWORD for p in parameters):
                 output = f(msg, **kwargs)
-            except TypeError:
+            else:
                 output = f(msg)
+
             for s in sink:
                 sink_output(s, output)
 

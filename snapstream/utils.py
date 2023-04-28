@@ -1,7 +1,87 @@
 """Snapstream utilities."""
 
 import logging
-from typing import Any, Dict
+from os import environ, getenv, listdir
+from pathlib import Path
+from re import match, sub
+from typing import Any, Dict, Optional
+
+from toolz.curried import compose, curry, last
+
+logger = logging.getLogger(__name__)
+
+
+def get_variable(
+    secret: str,
+    secrets_base_path='',
+    required=False
+) -> Optional[str]:
+    """Get environment or file variable."""
+    def getfilesecret(filepath):
+        with filepath.open('r') as f:
+            return f.read()
+    filepath = Path(secrets_base_path) / secret
+    try:
+        return getenv(secret) or (
+            getfilesecret(filepath)
+            if secrets_base_path else None
+        )
+    except FileNotFoundError as e:
+        logger.warning(
+            f'Environment variable "{secret}" or file: '
+            f'"{filepath}" not found (optional={not required}).')
+        if required:
+            raise e
+        return None
+
+
+def get_prefixed_variables(
+    prefix: str,
+    secrets_base_path='',
+    key_sep='.'
+) -> dict:
+    """Get environment or file variables having prefix.
+
+    >>> environ['DEFAULT_EXAMPLE'] = 'test'
+    >>> get_prefixed_variables(prefix='DEFAULT_')
+    {'example': 'test'}
+    >>> del environ['DEFAULT_EXAMPLE']
+    """
+    candidates = list(environ)
+    try:
+        candidates += listdir(secrets_base_path) if secrets_base_path else []
+    except FileNotFoundError as e:
+        logger.warning((
+            f"Function `{get_prefixed_variables.__name__}()` can't "
+            f"look up file secrets: {e}."
+        ))
+    filter_func = compose(
+        curry(match)(prefix.lower()),
+        str.lower
+    )
+    matches = filter(filter_func, candidates)
+    normalize_name = compose(
+        curry(sub)('[^0-9a-zA-Z]+', key_sep),
+        str.lower
+    )
+    variables = {
+        last(
+            normalize_name(name)
+            .split(normalize_name(prefix))
+        ): get_variable(name, secrets_base_path)
+        for name in matches
+    }
+    return variables
+
+
+def folder_size(folder: str, unit='mb'):
+    """Get size of folder."""
+    exponents_map = {'bytes': 0, 'kb': 1, 'mb': 2, 'gb': 3}
+    return round(
+        sum(f.stat().st_size for f in Path('.').glob(folder) if f.is_file())
+        / 1024 ** exponents_map[unit],
+        3
+    )
 
 
 class Singleton(type):
