@@ -20,15 +20,13 @@ class Cache:
         path: str,
         options: Union[Options, None] = None,
         column_families: Union[Dict[str, Options], None] = None,
-        access_type=AccessType.with_ttl(4 * 24 * 60 * MINUTES),
+        access_type=AccessType.read_write(),
         target_table_size=25 * MB
     ) -> None:
         """Create instance that holds rocksdb reference.
 
         This configuration setup optimizes for low disk usage (25mb per table/cf).
-        TTL is set to 4 days, older records may be removed during compaction.
-        When 25mb (target_table_size) is reached, the oldest file gets
-        deleted (the first records go out).
+        The oldest records may be removed during compaction.
 
         https://congyuwang.github.io/RocksDict/rocksdict.html
         """
