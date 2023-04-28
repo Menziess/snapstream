@@ -1,7 +1,7 @@
 """Snapstream public objects."""
 
 from inspect import signature
-from typing import Iterable
+from typing import Any, Callable, Generator, Iterable
 
 from pubsub import pub
 
@@ -19,31 +19,44 @@ __all__ = [
 ]
 
 
+def _sink_output(s: Callable[[Any], None], output: Any) -> None:
+    if not isinstance(output, tuple) and isinstance(s, (Cache)):
+        raise ValueError('Cache sink expects: Tuple[key, val].')
+    elif isinstance(output, tuple) and isinstance(s, (Cache, Topic)):
+        key, val = output
+        s(key=key, val=val)
+    else:
+        s(output)
+
+
+def _handle_generator_or_function(
+    sink: Iterable[Callable[[Any], None]],
+    output: Any
+) -> None:
+    if isinstance(output, Generator):
+        for val in output:
+            for s in sink:
+                _sink_output(s, val)
+    else:
+        for s in sink:
+            _sink_output(s, output)
+
+
 def snap(
     *iterable: Iterable,
-    sink: Iterable = []
+    sink: Iterable[Callable[[Any], None]] = []
 ):
     """Snaps function to stream.
 
     Ex:
-        >> topic = Topic('demo')
-        >> cache = Cache('state/demo')
+        >>> topic = Topic('demo')               # doctest: +SKIP
+        >>> cache = Cache('state/demo')         # doctest: +SKIP
 
-        >> @snap(topic, sink=[print, cache])
-        .. def handler(msg, **kwargs):
-        ..     return msg.key(), msg.value()
+        >>> @snap(topic, sink=[print, cache])   # doctest: +SKIP
+        ... def handler(msg, **kwargs):
+        ...     return msg.key(), msg.value()
     """
     c = Conf()
-
-    def sink_output(s, output):
-        if not isinstance(output, tuple) and isinstance(s, (Cache)):
-            # Sink requires Tuple[key, val]
-            raise ValueError('Cache sink expects: Tuple[key, val].')
-        elif isinstance(output, tuple) and isinstance(s, (Cache, Topic)):
-            key, val = output
-            s(key=key, val=val)
-        else:
-            s(output)
 
     def _deco(f):
         def _handler(msg, kwargs):
@@ -52,9 +65,7 @@ def snap(
                 output = f(msg, **kwargs)
             else:
                 output = f(msg)
-
-            for s in sink:
-                sink_output(s, output)
+            _handle_generator_or_function(sink, output)
 
         for it in iterable:
             iterable_key = str(id(it))
@@ -69,9 +80,9 @@ def stream(**kwargs):
     """Start the streams.
 
     Ex:
-        >> args = {
-        ..     'env': 'DEV',
-        .. }
-        >> stream(**args)
+        >>> args = {
+        ...     'env': 'DEV',
+        ... }
+        >>> stream(**args)
     """
     Conf().start(**kwargs)

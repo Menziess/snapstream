@@ -25,7 +25,7 @@ from snapstream import snap, stream
 
 @snap(range(5), sink=[print])
 def handler(msg):
-    return f'Hello {msg}'
+    yield f'Hello {msg}'
 
 stream()
 ```
