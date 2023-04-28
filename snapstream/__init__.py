@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-def _sink_output(s: Callable[[Any], None], output: Any) -> None:
+def _sink_output(s: Callable[..., None], output: Any) -> None:
     if not isinstance(output, tuple) and isinstance(s, (Cache)):
         raise ValueError('Cache sink expects: Tuple[key, val].')
     elif isinstance(output, tuple) and isinstance(s, (Cache, Topic)):
@@ -30,7 +30,7 @@ def _sink_output(s: Callable[[Any], None], output: Any) -> None:
 
 
 def _handle_generator_or_function(
-    sink: Iterable[Callable[[Any], None]],
+    sink: Iterable[Callable[..., None]],
     output: Any
 ) -> None:
     if isinstance(output, Generator):
@@ -44,7 +44,7 @@ def _handle_generator_or_function(
 
 def snap(
     *iterable: Iterable,
-    sink: Iterable[Callable[[Any], None]] = []
+    sink: Iterable[Callable[..., None]] = []
 ):
     """Snaps function to stream.
 
