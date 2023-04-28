@@ -13,12 +13,13 @@ from toolz import curry
 
 from snapstream import READ_FROM_END, Topic
 from snapstream.codecs import AvroCodec
+from snapstream.utils import get_variable
 
 DEFAULT_CONFIG_PATH = '~/'
 CONFIG_FILENAME = '.snapstreamcfg'
 
 
-def get_args(args=argv[1:]):
+def get_args(args=argv[1:]) -> Namespace:
     """Get user arguments."""
     parser = ArgumentParser('snapstream')
     subparsers = parser.add_subparsers(dest='action', required=True)
@@ -67,7 +68,7 @@ def default_cache_entry(path: str) -> dict:
     }
 
 
-def find_or_add_entry(config_path: str, args: Namespace):
+def get_config_entry(config_path: str, args: Namespace) -> dict:
     """Update config file."""
     try:
         with open(config_path) as f:
@@ -76,7 +77,7 @@ def find_or_add_entry(config_path: str, args: Namespace):
             raise RuntimeError('Expected config to be a json list:', config)
     except FileNotFoundError:
         if not (
-            input(f'Create {config_path} config? [y/n]: ')
+            input(f'Create missing {config_path}? [y/n]: ')
             .upper()
             .startswith('Y')
         ):
@@ -105,6 +106,17 @@ def find_or_add_entry(config_path: str, args: Namespace):
     config.append(entry)
     with open(config_path, 'w') as f:
         dump(config, f, indent=4)
+    return entry
+
+
+def replace_variable_references(entry: dict, args: Namespace) -> dict:
+    """For every value starting with $, replace with env."""
+    conf = entry['conf']
+    for k, v in conf.items():
+        if v.startswith('$'):
+            updated_v = get_variable(v[1:], args.secrets_base_path)
+            conf[k] = updated_v
+    entry['conf'] = conf
     return entry
 
 
@@ -165,7 +177,8 @@ def main():
         )
 
         # Get entry from config
-        entry = find_or_add_entry(config_path, args)
+        entry = get_config_entry(config_path, args)
+        entry = replace_variable_references(entry, args)
 
         # Call appropriate function with config and args
         {
