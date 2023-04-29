@@ -1,4 +1,4 @@
-[![Test Python Package](https://github.com/Menziess/snapstream/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menziess/snapstream/actions/workflows/python-test.yml)
+[![Test Python Package](https://github.com/Menziess/snapstream/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menziess/snapstream/actions/workflows/python-test.yml) [![Documentation Status](https://readthedocs.org/projects/snapstream/badge/?version=latest)](https://snapstream.readthedocs.io/en/latest/?badge=latest)
 
 # Snapstream
 
