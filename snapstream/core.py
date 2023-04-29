@@ -112,7 +112,7 @@ class ITopic(metaclass=ABCMeta):
     def create_topic(self, name: str, *args: Any, **kwargs: Dict[str, Any]) -> None:
         """Create topic.
 
-        - Should allow *args, **kwargs passthrough to kafka client.
+        - Should allow `*args`, `**kwargs` passthrough to kafka client.
         - Should log warning if topic already exists.
         """
         raise NotImplementedError
