@@ -4,7 +4,7 @@
 
 <img src="https://raw.githubusercontent.com/menziess/snapstream/master/res/logo.png" width="25%" height="25%" align="right" />
 
-A tiny data-flow model with a user-friendly interface that provides sensible defaults for Kafka integration, message serialization/deserialization, and data caching.
+Snapstream provides a data-flow model to simplify development of stateful streaming applications.
 
 ## Installation
 
@@ -61,7 +61,7 @@ snapstream topic emoji --offset -2
 
 - [`snapstream.snap`](snapstream/__init__.py): bind streams (iterables) and sinks (callables) to user defined handler functions
 - [`snapstream.stream`](snapstream/__init__.py): start streaming
-- [`snapstream.Topic`](snapstream/core.py): consume from (iterable) and produce to (callable) kafka using [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html)
+- [`snapstream.Topic`](snapstream/core.py): consume from (iterable), and produce to (callable) kafka using [**confluent-kafka**](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html)
 - [`snapstream.Cache`](snapstream/caching.py): store data to disk using [**rocksdict**](https://congyuwang.github.io/RocksDict/rocksdict.html)
 - [`snapstream.Conf`](snapstream/core.py): set global kafka configuration (can be overridden per topic)
 - [`snapstream.codecs.AvroCodec`](snapstream/codecs.py): serialize and deserialize avro messages
