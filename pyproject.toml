@@ -33,6 +33,7 @@ pytest-mock = "^3.10.0"
 ipykernel = "^6.22.0"
 sphinx = "^6.2.1"
 sphinx-rtd-theme = "^1.2.0"
+sphinx-autoapi = "^2.1.0"
 
 [build-system]
 requires = ["poetry-core"]
