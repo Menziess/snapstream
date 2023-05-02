@@ -25,7 +25,10 @@ READ_FROM_END = -1
 
 
 class Conf(metaclass=Singleton):
-    """Defines app configuration."""
+    """Define default kafka configuration, optionally.
+
+    >>> Conf({'bootstrap.servers': 'localhost:29091'})
+    """
 
     iterables: Set[Tuple[str, Iterable]] = set()
 
@@ -230,7 +233,22 @@ def get_producer(
 
 
 class Topic(ITopic):
-    """Act as producer and consumer."""
+    """Act as a consumer and producer.
+
+    >>> topic = Topic('emoji', {
+    ...     'bootstrap.servers': 'localhost:29091',
+    ...     'group.id': 'demo',
+    ... })
+
+    Loop over topic (iterable) to consume from it:
+
+    >>> for msg in topic:               # doctest: +SKIP
+    ...     print(msg.value())
+
+    Call topic (callable) with data to produce to it:
+
+    >>> topic({'msg': 'Hello World!'})  # doctest: +SKIP
+    """
 
     def __init__(
         self,

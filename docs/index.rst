@@ -1,14 +1,11 @@
 Snapstream documentation
-======================================
+========================
 
-Hi there! Glad to make your acquaintance.
-I'll be your guide for the next 2 minutes, walking you through some code samples to explain what the rather terse description of snapstream means:
+Snapstream provides a pure python data-flow model that works with anything:
 
-.. epigraph::
-
-   **Snapstream provides a data-flow model to simplify development of stateful streaming applications.**
-
-As a start, let's process the iterable ``range(5)``, just to get familiar with some core concepts:
+- Any `iterable <https://pythonbasics.org/iterable/>`_ can act as a source of data
+- Any callable may act as a sink
+- Handler functions can subscribe to iterables using the ``snap`` decorator
 
 ::
 
@@ -20,22 +17,39 @@ As a start, let's process the iterable ``range(5)``, just to get familiar with s
 
   stream()
 
-When ``stream()`` is called, the messages flow through the handler function into the sink.
+- Upon calling ``stream()``, each iterable is processed in a separate thread
+- Each element in the iterable is published to all subscriber functions
 
 ::
 
   Hello 0
   Hello 1
 
+Stateful Streaming
+------------------
+
+Snapstream aims to be unopinionated, whilst being extensible and having sensible default tools:
+
+.. currentmodule:: snapstream
+
+.. autosummary::
+   Topic
+   Cache
+   Conf
+
+.. autoclass:: Topic
+.. autoclass:: Cache
+.. autoclass:: Conf
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    source/install
-   autoapi/index
+   source/examples
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
