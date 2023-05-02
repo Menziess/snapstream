@@ -28,6 +28,7 @@ class Conf(metaclass=Singleton):
     """Define default kafka configuration, optionally.
 
     >>> Conf({'bootstrap.servers': 'localhost:29091'})
+    {'bootstrap.servers': 'localhost:29091'}
     """
 
     iterables: Set[Tuple[str, Iterable]] = set()
