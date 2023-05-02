@@ -13,14 +13,10 @@ author = 'Menziess'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.viewcode', 'sphinx.ext.autodoc', 'autoapi.extension']
+extensions = ['sphinx.ext.viewcode', 'sphinx.ext.autodoc']
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.venv/*']
-
-autoapi_type = 'python'
-autoapi_dirs = ['../snapstream']
-autoapi_ignore = ['*/__main__.py']
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
