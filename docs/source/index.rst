@@ -45,8 +45,8 @@ Snapstream aims to be unopinionated, whilst being extensible and having sensible
    :maxdepth: 2
    :caption: Contents:
 
-   source/install
-   source/examples
+   install
+   examples
 
 Indices and tables
 ------------------
