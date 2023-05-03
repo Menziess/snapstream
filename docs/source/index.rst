@@ -38,8 +38,11 @@ Snapstream aims to be unopinionated, whilst being extensible and having sensible
    Conf
 
 .. autoclass:: Topic
+   :noindex:
 .. autoclass:: Cache
+   :noindex:
 .. autoclass:: Conf
+   :noindex:
 
 .. toctree::
    :maxdepth: 2
