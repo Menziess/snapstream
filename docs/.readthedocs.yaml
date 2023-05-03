@@ -6,13 +6,11 @@ build:
     python: "3.10"
   jobs:
     pre_build:
-      - sphinx-apidoc -o docs/source/ .
+      - sphinx-apidoc -o docs/source/ snapstream
 
 sphinx:
   configuration: docs/source/conf.py
 
 python:
   install:
-    - method: pip
-      path: .
     - requirements: docs/requirements.txt
