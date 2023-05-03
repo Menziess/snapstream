@@ -48,9 +48,13 @@ Snapstream aims to be unopinionated, whilst being extensible and having sensible
    install
    examples
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Modules:
+
+   modules
+
 Indices and tables
 ------------------
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
