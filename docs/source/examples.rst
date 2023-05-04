@@ -3,98 +3,137 @@
 Examples
 ============
 
-We may have multiple iterables, multiple handler functions, and multiple sinks:
+Here's a list of useful snippets. Couldn't find what you seek? Create an issue: `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
+
+Conf
+-------
+
+Conf can be used to set common kafka configurations for multiple topics.
 
 ::
 
-  from snapstream import snap, stream
+  from snapstream import Conf, Topic
+
+  Conf({
+      'bootstrap.servers': 'localhost:29091',
+  })
+
+  topic1 = Topic('emoji', {'group.id': 'demo'})
+  topic2 = Topic('tweets')
+
+Topic
+-------
+
+Topic can be used to consume and produce to a kafka.
+
+Spin up a local kafka broker using `docker-compose.yml <https://github.com/Menziess/snapstream/blob/master/docker-compose.yml>`_:
+
+.. code-block:: bash
+
+  docker compose up broker -d
+
+- Connect to the "emoji" topic via ``localhost:29091``
+- A message is sent to kafka by calling ``topic`` as a function
+
+::
+
+  from snapstream import Topic
+
+  topic = Topic('emoji', {
+      'bootstrap.servers': 'localhost:29091',
+      'group.instance.id': 'demo',
+      'group.id': 'demo',
+  }, offset=-2)
+
+  topic('👌')
+
+  for msg in topic:
+      print(msg.value().decode())
+
+- Messages are consumed when iterated over ``topic``
+
+::
+
+  👌
+
+(using snapstream)
+******************
+
+The following code runs in parallel:
+
+::
+
   from time import sleep
 
-  it = ('🏆', '📞', '🐟', '👌')
+  from snapstream import Topic, snap, stream
 
-  @snap(it, sink=[print])
-  def handler1(msg):
-      sleep(0.1)
-      yield '1' + msg
+  messages = ('🏆', '📞', '🐟', '👌')
+  topic = Topic('emoji', {
+      'bootstrap.servers': 'localhost:29091',
+      'group.instance.id': 'demo',
+      'group.id': 'demo',
+  })
 
-  @snap(it, sink=[print])
-  def handler2(msg):
+  @snap(messages, sink=[topic])
+  def produce(msg):
       sleep(0.1)
-      yield '2' + msg
+      yield msg
 
-  @snap(it, sink=[print, print])
-  def handler3(msg):
-      sleep(0.1)
-      yield '3' + msg
+  @snap(topic, sink=[print])
+  def consume(msg):
+      yield msg.value().decode()
 
   stream()
 
-Upon starting the stream, you may see something like this:
+::
+
+  🏆
+  📞
+  🐟
+  👌
+
+Cache
+-------
 
 ::
 
-  1🏆
-  2🏆
-  3🏆
-  3🏆
-  1📞
-  2📞
-  3📞
-  3📞
-  1🐟
-  2🐟
-  3🐟
-  3🐟
-  1👌
-  2👌
-  3👌
-  3👌
+  # TODO
 
-The two iterables are processed in parallel.
-
-To tell you something about the backstory of this project, and the problem it tries to solve; it's actually quite difficult to join or merge kafka streams.
-When you finally bump into a great framework that solves this problem, you may find that it only works when the data is consumed from a single kafka cluster,
-or that it shoehorns you into using certain syntax or patterns that you didn't intend to use.
-My opinion is that libraries should provide you with tools, and that you should always be in control.
-
-
-In a simple world, each message in a stream is simply sent from point A to point B.
-But when data has to be joined/merged from multiple topics (especially when these topics live on separate kafka clusters), things tend to get more complicated.
-In these cases, sequential processing by subscribing a single consumer to multiple topics won't work.
-
-That's where the "data-flow model" comes in.
-
-As a result, messages may need to be processed in parallel, requiring a thread-safe caching technology.
-
-
-Let's have a look at some "tools" first, and then I'll show you where the "data-flow model" comes in:
-
-* .. class:: Topic(name: str, conf: dict = {}, ...)
-
-  Topic is used to consume from (iterable), and produce to (callable) kafka using `confluent-kafka <https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html/>`_:
-
-  ::
-
-    from snapstream import Topic
-
-    topic = Topic('emoji', {
-        'bootstrap.servers': 'localhost:29091',
-        'group.id': 'demo'
-    })
-
-  Example:
-
-    >>> topic({'emoji': '🏆'})
-    >>> for msg in topic:
-    ...     print(msg)
-    🏆
+Joining Streams
+---------------
 
 ::
 
-  from snapstream import Topic, Cache, snap, stream
+  # TODO
 
-  @snap(range(5), sink=[print])
+Timer
+------------------
+
+The following snippet prints out localtime every second:
+
+::
+
+  from time import localtime, sleep, strftime
+
+  from snapstream import snap, stream
+
+  def timer(interval=1.0):
+      while True:
+          yield
+          sleep(interval)
+
+  @snap(timer())
   def handler(msg):
-      yield f'Hello {msg}'
+      print(strftime('%H:%M:%S', localtime()))
 
   stream()
+
+- The ``timer()`` function returns a generator that yields ``None`` every 1.0 seconds
+- Out handler function prints out the local time whenever it's called
+
+::
+
+  23:25:10
+  23:25:11
+  23:25:12
+  ...
