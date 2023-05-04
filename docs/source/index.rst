@@ -3,11 +3,11 @@
 Snapstream documentation
 ========================
 
-Snapstream provides a pure python data-flow model that works with anything:
+Snapstream provides a pure python data-flow model that works well with built-in objects.
 
-- Any `iterable <https://pythonbasics.org/iterable/>`_ can act as a source of data
-- Any callable may act as a sink
-- Handler functions can subscribe to iterables using the ``snap`` decorator
+- Any `iterable <https://pythonbasics.org/iterable/>`_ may act as a source of data
+- Any callable can be used as a sink
+- Functions can subscribe to iterables using the ``snap`` decorator
 
 ::
 
@@ -19,8 +19,8 @@ Snapstream provides a pure python data-flow model that works with anything:
 
   stream()
 
-- Upon calling ``stream()``, each iterable is processed in a separate thread
-- Each element in the iterable is published to all subscriber functions
+- When we call ``stream()``, each iterable is processed in a separate thread
+- Elements from the iterables are published to their subscriber functions
 
 ::
 
@@ -30,7 +30,7 @@ Snapstream provides a pure python data-flow model that works with anything:
 Stateful Streaming
 ------------------
 
-Snapstream aims to be unopinionated, whilst being extensible and having sensible default tools:
+By combining the default tools below with this data-flow model, it is relatively easy to establish complex stateful streams (see :ref:`Examples <examples>`):
 
 .. currentmodule:: snapstream
 
