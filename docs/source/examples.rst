@@ -3,10 +3,59 @@
 Examples
 ============
 
-Here's a list of useful snippets. Couldn't find what you seek? Create a `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
+Can't find what you seek? Create a `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
+
+Spin up a local kafka broker using `docker-compose.yml <https://github.com/Menziess/snapstream/blob/master/docker-compose.yml>`_ to follow along:
+
+.. code-block:: bash
+
+  docker compose up broker -d
+
+Topic
+-----
+
+To produce and consume data from kafka, create a Topic instance.
+
+- A message is sent to kafka by calling ``topic`` as a function
+
+::
+
+  from snapstream import Topic
+
+  topic = Topic('emoji', {
+      'bootstrap.servers': 'localhost:29091',
+      'group.instance.id': 'demo',
+      'group.id': 'demo',
+  }, offset=-2)
+
+  topic('🐟')
+  topic(key='key', val='🐟')
+
+  for msg in topic:
+      print(msg.key(), msg.value().decode())
+
+- Messages are consumed when iterated over ``topic``
+
+::
+
+  None 🐟
+  b'key' 🐟
+
+Topic uses `confluent-kafka <https://docs.confluent.io/kafka-clients/python/current/overview.html>`_.
+
+Cache
+-------
+
+To cache data, create a Cache instance.
+
+- A Cache instance is also callable, but always requires a key
+
+::
+
+  # TODO
 
 Conf
--------
+----
 
 Conf can be used to set default kafka configurations.
 
@@ -38,98 +87,32 @@ Conf can be used to set default kafka configurations.
   {'bootstrap.servers': 'localhost:29092', 'group.id': 'default-demo'}
   {'bootstrap.servers': 'localhost:29091', 'group.id': 'demo', 'security.protocol': 'SASL_SSL', 'sasl.mechanism': 'PLAIN', 'sasl.username': 'myuser', 'sasl.password': 'mypass'}
 
-Topic
--------
+Variable return values
+-----------------
 
-Topic can be used to consume and produce to a kafka.
-
-Spin up a local kafka broker using `docker-compose.yml <https://github.com/Menziess/snapstream/blob/master/docker-compose.yml>`_:
-
-.. code-block:: bash
-
-  docker compose up broker -d
-
-- Connect to the "emoji" topic via ``localhost:29091``
-- A message is sent to kafka by calling ``topic`` as a function
+It may be the case that your handler function returns zero or more values. In that case, ``yield`` can be used instead of ``return``.
 
 ::
 
-  from snapstream import Topic
+  from snapstream import snap, stream
 
-  topic = Topic('emoji', {
-      'bootstrap.servers': 'localhost:29091',
-      'group.instance.id': 'demo',
-      'group.id': 'demo',
-  }, offset=-2)
-
-  topic('👌')
-
-  for msg in topic:
-      print(msg.value().decode())
-
-- Messages are consumed when iterated over ``topic``
-
-::
-
-  👌
-
-(using snapstream)
-******************
-
-The following code runs in parallel:
-
-::
-
-  from time import sleep
-
-  from snapstream import Topic, snap, stream
-
-  messages = ('🏆', '📞', '🐟', '👌')
-  topic = Topic('emoji', {
-      'bootstrap.servers': 'localhost:29091',
-      'group.instance.id': 'demo',
-      'group.id': 'demo',
-  })
-
-  @snap(messages, sink=[topic])
-  def produce(msg):
-      sleep(0.1)
-      yield msg
-
-  @snap(topic, sink=[print])
-  def consume(msg):
-      yield msg.value().decode()
+  @snap(range(5), sink=[print])
+  def handler(n):
+      if n % 2 == 0:
+          yield f'equal: {n}'
+      if n == 0:
+          yield f'zero: {n}'
 
   stream()
 
 ::
 
-  🏆
-  📞
-  🐟
-  👌
+  equal: 0
+  zero: 0
+  equal: 2
+  equal: 4
 
-Cache
--------
-
-::
-
-  # TODO
-
-Yield over return
----------------
-::
-
-  # TODO
-
-Joining Streams
----------------
-
-::
-
-  # TODO
-
-Timer
+Interval
 ------------------
 
 The following snippet prints out localtime every second:
