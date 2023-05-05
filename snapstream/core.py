@@ -299,8 +299,6 @@ class Topic(ITopic):
 
     def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
-        if not (key or val):
-            return
         self.producer = (
             self.producer or
             get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.callback).__enter__()
