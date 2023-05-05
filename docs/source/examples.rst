@@ -3,12 +3,12 @@
 Examples
 ============
 
-Here's a list of useful snippets. Couldn't find what you seek? Create an issue: `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
+Here's a list of useful snippets. Couldn't find what you seek? Create a `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
 
 Conf
 -------
 
-Conf can be used to set common kafka configurations for multiple topics.
+Conf can be used to set default kafka configurations.
 
 ::
 
@@ -16,10 +16,27 @@ Conf can be used to set common kafka configurations for multiple topics.
 
   Conf({
       'bootstrap.servers': 'localhost:29091',
+      'group.id': 'default-demo',
   })
 
-  topic1 = Topic('emoji', {'group.id': 'demo'})
-  topic2 = Topic('tweets')
+  topic1 = Topic('emoji', {'bootstrap.servers': 'localhost:29092'})
+
+  Conf({
+      'security.protocol': 'SASL_SSL',
+      'sasl.mechanism': 'PLAIN',
+      'sasl.username': 'myuser',
+      'sasl.password': 'mypass',
+  })
+
+  topic2 = Topic('tweets', {'group.id': 'demo'})
+
+  print(topic1.conf)
+  print(topic2.conf)
+
+::
+
+  {'bootstrap.servers': 'localhost:29092', 'group.id': 'default-demo'}
+  {'bootstrap.servers': 'localhost:29091', 'group.id': 'demo', 'security.protocol': 'SASL_SSL', 'sasl.mechanism': 'PLAIN', 'sasl.username': 'myuser', 'sasl.password': 'mypass'}
 
 Topic
 -------
@@ -95,6 +112,12 @@ The following code runs in parallel:
 Cache
 -------
 
+::
+
+  # TODO
+
+Yield over return
+---------------
 ::
 
   # TODO
