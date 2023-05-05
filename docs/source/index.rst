@@ -3,48 +3,60 @@
 Snapstream documentation
 ========================
 
-Snapstream provides a pure python data-flow model that works well with built-in objects.
+Snapstream can be summarized as:
 
-- Any `iterable <https://pythonbasics.org/iterable/>`_ may act as a source of data
-- Any callable can be used as a sink
-- Functions can subscribe to iterables using the ``snap`` decorator
+- Two functions: ``snap`` and ``stream`` (the data-flow model)
+- ``Topic``: default way to interact with kafka
+- ``Cache``: default persistence functionality
 
 ::
 
-  from snapstream import snap, stream
+  from time import sleep
 
-  @snap(range(2), sink=[print])
-  def handler(msg):
-      yield f'Hello {msg}'
+  from snapstream import Topic, snap, stream
+
+  messages = ('🏆', '📞', '🐟', '👌')
+
+  t = Topic('emoji', {
+      'bootstrap.servers': 'localhost:29091',
+      'group.instance.id': 'demo',
+      'group.id': 'demo',
+  })
+
+  @snap(messages, sink=[t])
+  def produce(msg):
+      sleep(0.5)
+      print(f'producing {msg}')
+      return msg
+
+  @snap(t, sink=[print])
+  def consume(msg):
+      val = msg.value().decode()
+      return f'got: {val}'
 
   stream()
 
+- Any `iterable <https://pythonbasics.org/iterable/>`_ may act as a source of data
+- Any callable can be used as a sink
+
+.. image:: ../../res/demo.gif
+   :scale: 90 %
+
 - When we call ``stream()``, each iterable is processed in a separate thread
-- Elements from the iterables are published to their subscriber functions
+- Elements are published to each ``snap`` decorated handler function
 
 ::
 
-  Hello 0
-  Hello 1
+  Producing 🏆
+  got: 🏆
+  Producing 📞
+  got: 📞
+  Producing 🐟
+  got: 🐟
+  Producing 👌
+  got: 👌
 
-Stateful Streaming
-------------------
-
-By combining the default tools below with this data-flow model, it is relatively easy to establish complex stateful streams (see :ref:`Examples <examples>`):
-
-.. currentmodule:: snapstream
-
-.. autosummary::
-   Topic
-   Cache
-   Conf
-
-.. autoclass:: Topic
-   :noindex:
-.. autoclass:: Cache
-   :noindex:
-.. autoclass:: Conf
-   :noindex:
+These simple concepts offer interesting ways to establish complex stateful streams.
 
 .. toctree::
    :maxdepth: 2
