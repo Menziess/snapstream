@@ -3,20 +3,20 @@
 Examples
 ============
 
-Can't find what you seek? Create a `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
-
 Spin up a local kafka broker using `docker-compose.yml <https://github.com/Menziess/snapstream/blob/master/docker-compose.yml>`_ to follow along:
 
 .. code-block:: bash
 
   docker compose up broker -d
 
+Can't find what you seek? Create a `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
+
 Topic
 -----
 
-To produce and consume data from kafka, create a Topic instance.
+Topic can be used to send and receive kafka messages.
 
-- A message is sent to kafka by calling ``topic`` as a function
+- Data is sent to kafka when ``topic`` is called as a function
 
 ::
 
@@ -34,7 +34,7 @@ To produce and consume data from kafka, create a Topic instance.
   for msg in topic:
       print(msg.key(), msg.value().decode())
 
-- Messages are consumed when iterated over ``topic``
+- Messages are consumed when ``topic`` is iterated over
 
 ::
 
@@ -44,20 +44,44 @@ To produce and consume data from kafka, create a Topic instance.
 Topic uses `confluent-kafka <https://docs.confluent.io/kafka-clients/python/current/overview.html>`_.
 
 Cache
--------
+-----
 
-To cache data, create a Cache instance.
+Cache can be used to persist data.
 
-- A Cache instance is also callable, but always requires a key
+- Data is cached when ``cache`` is called as a function
 
 ::
 
-  # TODO
+  from snapstream import Cache
+
+  cache = Cache('db')
+
+  cache('prize', '🏆')
+
+- Data is stored in sst files in the provided folder: ``db``
+
+::
+
+  cache['phone'] = '📞'
+
+  for x, y in cache.items():
+      print(x, y)
+
+- Cache is also subscriptable
+
+::
+
+  phone 📞
+  prize 🏆
+
+Cache is a basic wrapper around `rocksdict <https://congyuwang.github.io/RocksDict/rocksdict.html>`_.
 
 Conf
 ----
 
 Conf can be used to set default kafka configurations.
+
+- Conf is a Singleton class, there can only be a single instance
 
 ::
 
@@ -82,15 +106,17 @@ Conf can be used to set default kafka configurations.
   print(topic1.conf)
   print(topic2.conf)
 
+- Default configurations can be overridden per topic
+
 ::
 
   {'bootstrap.servers': 'localhost:29092', 'group.id': 'default-demo'}
   {'bootstrap.servers': 'localhost:29091', 'group.id': 'demo', 'security.protocol': 'SASL_SSL', 'sasl.mechanism': 'PLAIN', 'sasl.username': 'myuser', 'sasl.password': 'mypass'}
 
 Variable return values
------------------
+----------------------
 
-It may be the case that your handler function returns zero or more values. In that case, ``yield`` can be used instead of ``return``.
+When your handler function returns zero or more values, use ``yield`` instead of ``return``.
 
 ::
 
@@ -112,10 +138,10 @@ It may be the case that your handler function returns zero or more values. In th
   equal: 2
   equal: 4
 
-Interval
+Output stream only
 ------------------
 
-The following snippet prints out localtime every second:
+If there's no incoming data, generators can be used to trigger handler functions.
 
 ::
 
@@ -135,7 +161,6 @@ The following snippet prints out localtime every second:
   stream()
 
 - The ``timer()`` function returns a generator that yields ``None`` every 1.0 seconds
-- Out handler function prints out the local time whenever it's called
 
 ::
 
@@ -143,3 +168,10 @@ The following snippet prints out localtime every second:
   23:25:11
   23:25:12
   ...
+
+Codec
+-----
+
+::
+
+  # TODO
