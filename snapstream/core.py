@@ -25,7 +25,11 @@ READ_FROM_END = -1
 
 
 class Conf(metaclass=Singleton):
-    """Defines app configuration."""
+    """Define default kafka configuration, optionally.
+
+    >>> Conf({'bootstrap.servers': 'localhost:29091'})
+    {'bootstrap.servers': 'localhost:29091'}
+    """
 
     iterables: Set[Tuple[str, Iterable]] = set()
 
@@ -112,7 +116,7 @@ class ITopic(metaclass=ABCMeta):
     def create_topic(self, name: str, *args: Any, **kwargs: Dict[str, Any]) -> None:
         """Create topic.
 
-        - Should allow *args, **kwargs passthrough to kafka client.
+        - Should allow `*args`, `**kwargs` passthrough to kafka client.
         - Should log warning if topic already exists.
         """
         raise NotImplementedError
@@ -230,7 +234,22 @@ def get_producer(
 
 
 class Topic(ITopic):
-    """Act as producer and consumer."""
+    """Act as a consumer and producer.
+
+    >>> topic = Topic('emoji', {
+    ...     'bootstrap.servers': 'localhost:29091',
+    ...     'group.id': 'demo',
+    ... })
+
+    Loop over topic (iterable) to consume from it:
+
+    >>> for msg in topic:               # doctest: +SKIP
+    ...     print(msg.value())
+
+    Call topic (callable) with data to produce to it:
+
+    >>> topic({'msg': 'Hello World!'})  # doctest: +SKIP
+    """
 
     def __init__(
         self,
@@ -280,8 +299,6 @@ class Topic(ITopic):
 
     def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
-        if not (key or val):
-            return
         self.producer = (
             self.producer or
             get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.callback).__enter__()

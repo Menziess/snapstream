@@ -13,7 +13,16 @@ MB, MINUTES = 1024 * 1024, 60
 
 
 class Cache:
-    """A Rocksdb instance."""
+    """Create a RocksDB database in the specified folder.
+
+    >>> cache = Cache('db/mycache')            # doctest: +SKIP
+
+    The cache instance acts as a callable to store data:
+
+    >>> cache('key', {'msg': 'Hello World!'})  # doctest: +SKIP
+    >>> cache['key']                           # doctest: +SKIP
+    {'msg': 'Hello World!'}
+    """
 
     def __init__(
         self,

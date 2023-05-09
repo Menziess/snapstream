@@ -5,8 +5,21 @@ description = "Streamline your Kafka data processing, this tool aims to standard
 authors = ["Menziess <stefan_schenk@hotmail.com>"]
 readme = "README.md"
 repository = "https://github.com/Menziess/snapstream"
+documentation = "https://snapstream.readthedocs.io"
 license = "MIT"
 keywords = ["kafka", "pubsub"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 
 [tool.poetry.scripts]
 snapstream = 'snapstream.__main__:main'
@@ -31,6 +44,10 @@ pytest-cov = "^4.0.0"
 pre-commit = "^3.2.1"
 pytest-mock = "^3.10.0"
 ipykernel = "^6.22.0"
+sphinx = "^6.2.1"
+sphinx-rtd-theme = "^1.2.0"
+sphinx-autoapi = "^2.1.0"
+sphinx-autobuild = "^2021.3.14"
 
 [build-system]
 requires = ["poetry-core"]
