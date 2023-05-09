@@ -113,7 +113,7 @@ Conf can be used to set default kafka configurations.
   {'bootstrap.servers': 'localhost:29092', 'group.id': 'default-demo'}
   {'bootstrap.servers': 'localhost:29091', 'group.id': 'demo', 'security.protocol': 'SASL_SSL', 'sasl.mechanism': 'PLAIN', 'sasl.username': 'myuser', 'sasl.password': 'mypass'}
 
-Variable return values
+Yield
 ----------------------
 
 When your handler function returns zero or more values, use ``yield`` instead of ``return``.
@@ -138,7 +138,7 @@ When your handler function returns zero or more values, use ``yield`` instead of
   equal: 2
   equal: 4
 
-Output stream only
+Timer
 ------------------
 
 If there's no incoming data, generators can be used to trigger handler functions.
@@ -172,6 +172,50 @@ If there's no incoming data, generators can be used to trigger handler functions
 Codec
 -----
 
+Codecs are used for serializing and deserializing data.
+
+- Data that's passed to ``topic`` is automatically json serialized
+
 ::
 
-  # TODO
+  from snapstream import Topic
+  from snapstream.codecs import JsonCodec, ICodec
+
+  topic = Topic('codec-demo', {
+      'bootstrap.servers': 'localhost:29091',
+      'group.instance.id': 'demo',
+      'group.id': 'demo',
+  }, offset=-2, codec=JsonCodec())
+
+  topic({'msg': '🐟'})
+
+  for msg in topic:
+      print(msg.value())
+
+- Data that's read from ``topic`` is automatically deserialized
+
+::
+
+  {'msg': '🐟'}
+
+- It's possible to create custom codecs by extending ``ICodec``
+
+::
+
+  class AvroCodec(ICodec):
+    """Serializes/deserializes avro messages."""
+
+    def __init__(self, path: str):
+        """Load avro schema."""
+        with open(path) as a:
+            self.schema = parse(a.read())
+
+    def encode(self, obj: Any) -> bytes:
+        """Serialize message."""
+        val = serialize_avro(self.schema, obj)
+        return cast(bytes, val)
+
+    def decode(self, s: bytes) -> object:
+        """Deserialize message."""
+        val = deserialize_avro(self.schema, s)
+        return cast(object, val)

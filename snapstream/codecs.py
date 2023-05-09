@@ -66,7 +66,7 @@ class ICodec(metaclass=ABCMeta):
 
 
 class JsonCodec(ICodec):
-    """Codec for avro messages."""
+    """Serialize/deserialize json messages."""
 
     def encode(self, obj: Any) -> bytes:
         """Serialize message."""
@@ -78,7 +78,7 @@ class JsonCodec(ICodec):
 
 
 class AvroCodec(ICodec):
-    """Codec for avro messages."""
+    """Serialize/deserialize avro messages."""
 
     def __init__(self, path: str):
         """Load avro schema."""
