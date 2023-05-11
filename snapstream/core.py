@@ -74,6 +74,7 @@ class Conf(metaclass=Singleton):
                     raise exception
         except KeyboardInterrupt:
             logger.info('You stopped the program.')
+            exit()
         finally:
             self.iterables = set()
 
