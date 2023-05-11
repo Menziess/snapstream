@@ -63,8 +63,10 @@ def snap(
             parameters = signature(f).parameters.values()
             if any(p.kind == p.VAR_KEYWORD for p in parameters):
                 output = f(msg, **kwargs)
-            else:
+            elif parameters:
                 output = f(msg)
+            else:
+                output = f()
             _handle_generator_or_function(sink, output)
 
         for it in iterable:
