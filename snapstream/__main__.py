@@ -75,7 +75,7 @@ def default_cache_entry(path: str) -> dict:
     """Create default topic entry."""
     return {
         'type': 'Cache',
-        'name': path,
+        'path': path,
         'conf': {}
     }
 
