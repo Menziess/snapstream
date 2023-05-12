@@ -18,7 +18,8 @@ from toolz import pipe
 from snapstream.codecs import ICodec
 from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 READ_FROM_START = -2
 READ_FROM_END = -1

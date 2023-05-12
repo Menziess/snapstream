@@ -1,5 +1,6 @@
 """Snapstream public objects."""
 
+import logging
 from inspect import signature
 from typing import Any, Callable, Generator, Iterable
 
@@ -17,6 +18,8 @@ __all__ = [
     'READ_FROM_START',
     'READ_FROM_END',
 ]
+
+logging.basicConfig()
 
 
 def _sink_output(s: Callable[..., None], output: Any) -> None:
