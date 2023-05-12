@@ -73,7 +73,6 @@ class Conf(metaclass=Singleton):
                 if exception := queue.get():
                     raise exception
         except KeyboardInterrupt:
-            logger.info('You stopped the program.')
             exit()
         finally:
             self.iterables = set()
