@@ -156,7 +156,7 @@ If there's no incoming data, generators can be used to trigger handler functions
           sleep(interval)
 
   @snap(timer())
-  def handler(msg):
+  def handler():
       print(strftime('%H:%M:%S', localtime()))
 
   stream()
