@@ -276,6 +276,10 @@ class Topic(ITopic):
         self.codec = codec
         self.dry = dry
 
+    def admin(self):
+        """Get admin client."""
+        return AdminClient(self.conf)
+
     def create_topic(self, *args, **kwargs) -> None:
         """Create topic."""
         admin = AdminClient(self.conf)
