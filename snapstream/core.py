@@ -238,6 +238,7 @@ class Topic(ITopic):
 
     >>> topic = Topic('emoji', {
     ...     'bootstrap.servers': 'localhost:29091',
+    ...     'auto.offset.reset': 'earliest',
     ...     'group.id': 'demo',
     ... })
 
