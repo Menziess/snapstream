@@ -20,6 +20,7 @@ from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+logger.addFilter(KafkaIgnoredPropertyFilter())
 
 READ_FROM_START = -2
 READ_FROM_END = -1
@@ -54,8 +55,6 @@ class Conf(metaclass=Singleton):
 
     def start(self, **kwargs):
         """Start the streams."""
-        logger.addFilter(KafkaIgnoredPropertyFilter())
-
         queue = Queue(maxsize=1)
         threads = [
             Thread(
