@@ -18,7 +18,9 @@ from toolz import pipe
 from snapstream.codecs import ICodec
 from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addFilter(KafkaIgnoredPropertyFilter())
 
 READ_FROM_START = -2
 READ_FROM_END = -1
@@ -53,8 +55,6 @@ class Conf(metaclass=Singleton):
 
     def start(self, **kwargs):
         """Start the streams."""
-        logger.addFilter(KafkaIgnoredPropertyFilter())
-
         queue = Queue(maxsize=1)
         threads = [
             Thread(
@@ -73,7 +73,7 @@ class Conf(metaclass=Singleton):
                 if exception := queue.get():
                     raise exception
         except KeyboardInterrupt:
-            logger.info('You stopped the program.')
+            exit()
         finally:
             self.iterables = set()
 
@@ -238,6 +238,7 @@ class Topic(ITopic):
 
     >>> topic = Topic('emoji', {
     ...     'bootstrap.servers': 'localhost:29091',
+    ...     'auto.offset.reset': 'earliest',
     ...     'group.id': 'demo',
     ... })
 
@@ -275,6 +276,10 @@ class Topic(ITopic):
         self.poller = poller
         self.codec = codec
         self.dry = dry
+
+    def admin(self):
+        """Get admin client."""
+        return AdminClient(self.conf)
 
     def create_topic(self, *args, **kwargs) -> None:
         """Create topic."""

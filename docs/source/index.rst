@@ -19,6 +19,7 @@ Snapstream can be summarized as:
 
   t = Topic('emoji', {
       'bootstrap.servers': 'localhost:29091',
+      'auto.offset.reset': 'earliest',
       'group.instance.id': 'demo',
       'group.id': 'demo',
   })

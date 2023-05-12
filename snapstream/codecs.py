@@ -11,6 +11,7 @@ from avro.schema import Schema, parse
 from toolz import curry
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def deserialize_json(msg: bytes) -> dict:

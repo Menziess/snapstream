@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 from toolz.curried import compose, curry, last
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def get_variable(

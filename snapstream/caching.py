@@ -96,13 +96,13 @@ class Cache:
         """Set item in db."""
         self.db[key] = val
 
-    def __enter__(self) -> Rdict:
+    def __enter__(self) -> 'Cache':
         """Contextmanager."""
-        return self.db.__enter__()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit contextmanager."""
-        self.db.__exit__(exc_type, exc_val, exc_tb)
+        self.close()
 
     def set_dumps(self, dumps: Callable[[Any], bytes]) -> None:
         """Set custom dumps function."""

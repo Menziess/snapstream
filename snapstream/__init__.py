@@ -1,5 +1,6 @@
 """Snapstream public objects."""
 
+import logging
 from inspect import signature
 from typing import Any, Callable, Generator, Iterable
 
@@ -17,6 +18,8 @@ __all__ = [
     'READ_FROM_START',
     'READ_FROM_END',
 ]
+
+logging.basicConfig()
 
 
 def _sink_output(s: Callable[..., None], output: Any) -> None:
@@ -63,8 +66,10 @@ def snap(
             parameters = signature(f).parameters.values()
             if any(p.kind == p.VAR_KEYWORD for p in parameters):
                 output = f(msg, **kwargs)
-            else:
+            elif parameters:
                 output = f(msg)
+            else:
+                output = f()
             _handle_generator_or_function(sink, output)
 
         for it in iterable:

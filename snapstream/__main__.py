@@ -10,10 +10,10 @@ from json import dump, dumps, load
 from os import path
 from re import search
 from sys import argv, exit
-from typing import Optional
+from typing import Callable, Optional
 
 from rocksdict import AccessType
-from toolz import curry
+from toolz import compose, curry, identity
 
 from snapstream import READ_FROM_END, Cache, Topic
 from snapstream.codecs import AvroCodec
@@ -60,22 +60,22 @@ def get_args(args=argv[1:]) -> Namespace:
     return parser.parse_args(args)
 
 
-def default_topic_entry(name: str) -> dict:
+def default_topic_entry(name: str, prep: Callable) -> dict:
     """Create default topic entry."""
     return {
         'type': 'Topic',
-        'name': name,
+        'name': prep(name),
         'conf': {
             'bootstrap.servers': 'localhost:29091',
         }
     }
 
 
-def default_cache_entry(path: str) -> dict:
+def default_cache_entry(path: str, prep: Callable) -> dict:
     """Create default topic entry."""
     return {
         'type': 'Cache',
-        'name': path,
+        'path': prep(path),
         'conf': {}
     }
 
@@ -97,22 +97,22 @@ def get_config_entry(config_path: str, args: Namespace) -> dict:
         config = []
 
     # Find prop having certain key
-    prop = {
-        'topic': 'name',
-        'cache': 'path',
+    prep, prop = {
+        'topic': [identity, 'name'],
+        'cache': [compose(path.abspath, path.expanduser), 'path'],
     }[args.action]
     key = getattr(args, prop)
     if entry := {
         key: _
         for _ in config
-        if _.get(prop) == key
+        if _.get(prop) == prep(key)
     }.get(key):
         return entry
 
     # If not found, create entry
     entry = (
-        default_topic_entry(args.name) if args.action == 'topic'
-        else default_cache_entry(args.path) if args.action == 'cache'
+        default_topic_entry(args.name, prep) if args.action == 'topic'
+        else default_cache_entry(args.path, prep) if args.action == 'cache'
         else {}
     )
     config.append(entry)
@@ -126,8 +126,9 @@ def replace_variable_references(entry: dict, args: Namespace) -> dict:
     conf = entry['conf']
     for k, v in conf.items():
         if v.startswith('$'):
-            updated_v = get_variable(v[1:], args.secrets_base_path)
-            conf[k] = updated_v
+            conf[k] = get_variable(v[1:], args.secrets_base_path)
+        if v.startswith(r'\$'):
+            conf[k] = v.replace()
     entry['conf'] = conf
     return entry
 

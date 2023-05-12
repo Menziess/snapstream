@@ -24,6 +24,7 @@ Topic can be used to send and receive kafka messages.
 
   topic = Topic('emoji', {
       'bootstrap.servers': 'localhost:29091',
+      'auto.offset.reset': 'earliest',
       'group.instance.id': 'demo',
       'group.id': 'demo',
   }, offset=-2)
@@ -155,7 +156,7 @@ If there's no incoming data, generators can be used to trigger handler functions
           sleep(interval)
 
   @snap(timer())
-  def handler(msg):
+  def handler():
       print(strftime('%H:%M:%S', localtime()))
 
   stream()
@@ -183,6 +184,7 @@ Codecs are used for serializing and deserializing data.
 
   topic = Topic('codec-demo', {
       'bootstrap.servers': 'localhost:29091',
+      'auto.offset.reset': 'earliest',
       'group.instance.id': 'demo',
       'group.id': 'demo',
   }, offset=-2, codec=JsonCodec())
