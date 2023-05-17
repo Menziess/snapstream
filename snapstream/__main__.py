@@ -128,7 +128,7 @@ def replace_variable_references(entry: dict, args: Namespace) -> dict:
         if v.startswith('$'):
             conf[k] = get_variable(v[1:], args.secrets_base_path)
         if v.startswith(r'\$'):
-            conf[k] = v.replace()
+            conf[k] = v.replace(r'\$', '$')
     entry['conf'] = conf
     return entry
 
