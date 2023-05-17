@@ -271,6 +271,7 @@ class Topic(ITopic):
         self.starting_offset = offset
         self.flush_timeout = flush_timeout
         self.poll_timeout = poll_timeout
+        self.consumer = None
         self.producer = None
         self.callback = callback
         self.poller = poller
@@ -300,6 +301,25 @@ class Topic(ITopic):
         c = get_consumer(self.name, self.conf, self.starting_offset, self.codec, self.poll_timeout, self.poller)
         with c as consumer:
             for msg in consumer:
+                yield msg
+
+    def __next__(self) -> Any:
+        """Consume next message from topic."""
+        self.consumer = self.consumer or self.__iter__()
+        return next(self.consumer)
+
+    def __getitem__(self, i) -> Any:
+        """Consume specific range of messages from topic."""
+        if not isinstance(i, (slice, int)):
+            raise TypeError('Expected slice or int.')
+        start, step, stop = (i, None, None) if isinstance(i, int) else (i.start, i.step, i.stop)
+        c = get_consumer(self.name, self.conf, start, self.codec, self.poll_timeout, self.poller)
+        with c as consumer:
+            for msg in consumer:
+                if stop and msg.offset() >= stop:
+                    return
+                if step and (msg.offset() - max(0, start)) % step != 0:
+                    continue
                 yield msg
 
     def __call__(self, val, key=None, *args, **kwargs) -> None:
