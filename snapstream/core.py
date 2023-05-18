@@ -312,7 +312,15 @@ class Topic(ITopic):
         """Consume specific range of messages from topic."""
         if not isinstance(i, (slice, int)):
             raise TypeError('Expected slice or int.')
-        start, step, stop = (i, None, None) if isinstance(i, int) else (i.start, i.step, i.stop)
+        start, step, stop = (
+            i,
+            None,
+            i + 1 if i >= 0 else None
+        ) if isinstance(i, int) else (
+            i.start,
+            i.step,
+            i.stop
+        )
         c = get_consumer(self.name, self.conf, start, self.codec, self.poll_timeout, self.poller)
         with c as consumer:
             for msg in consumer:
