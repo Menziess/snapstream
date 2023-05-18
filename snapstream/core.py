@@ -198,26 +198,14 @@ def get_consumer(
         c.close()
 
 
-def _producer_handler(err, msg):
-    if err is not None:
-        logger.error(f'Failed to deliver message: {err}.')
-        # Raise exception by default
-        raise KafkaException(err)
-    else:
-        logger.debug(f'Produced to topic: {msg.topic()}.')
-
-
-@contextmanager
-def get_producer(
-    topic: str,
-    conf: dict,
-    dry=False,
-    codec: Optional[ICodec] = None,
-    flush_timeout: float = -1.0,
-    callback=_producer_handler
-) -> Iterator[Callable[[Any, Any], None]]:
-    """Yield kafka produce method."""
-    p = Producer(conf, logger=logger)
+def _producer_handler(p, topic, dry, codec):
+    def callback(err, msg):
+        if err is not None:
+            logger.error(f'Failed to deliver message: {err}.')
+            # Raise exception by default
+            raise KafkaException(err)
+        else:
+            logger.debug(f'Produced to topic: {msg.topic()}.')
 
     def produce(key, val, *args, **kwargs):
         if codec:
@@ -227,9 +215,21 @@ def get_producer(
             logger.warning(f'Skipped sending message to {topic} [dry=True].')
             return
         p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=callback)
+    return produce
 
-    yield produce
 
+@contextmanager
+def get_producer(
+    topic: str,
+    conf: dict,
+    dry=False,
+    codec: Optional[ICodec] = None,
+    flush_timeout: float = -1.0,
+    pusher=_producer_handler
+) -> Iterator[Callable[[Any, Any], None]]:
+    """Yield kafka produce method."""
+    p = Producer(conf, logger=logger)
+    yield pusher(p, topic, dry, codec)
     p.flush(flush_timeout)
 
 
@@ -260,7 +260,7 @@ class Topic(ITopic):
         codec: Optional[ICodec] = None,
         flush_timeout: float = -1.0,
         poll_timeout: float = 1.0,
-        callback=_producer_handler,
+        pusher=_producer_handler,
         poller=_consumer_handler,
         dry: bool = False
     ) -> None:
@@ -273,7 +273,7 @@ class Topic(ITopic):
         self.poll_timeout = poll_timeout
         self.consumer = None
         self.producer = None
-        self.callback = callback
+        self.pusher = pusher
         self.poller = poller
         self.codec = codec
         self.dry = dry
@@ -326,6 +326,6 @@ class Topic(ITopic):
         """Produce to topic."""
         self.producer = (
             self.producer or
-            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.callback).__enter__()
+            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.pusher).__enter__()
         )
         self.producer(key, val, *args, **kwargs)
