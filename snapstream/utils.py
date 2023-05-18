@@ -110,6 +110,7 @@ class KafkaIgnoredPropertyFilter(logging.Filter):
     def filter(self, record):
         """Suppress CONFWARN messages with specific config keys."""
         return not (
-            record.levelno == logging.WARNING
-            and 'property and will be ignored' in record.getMessage()
+            (record.levelno == logging.WARNING)
+            and
+            'property and will be ignored' in record.getMessage()
         )

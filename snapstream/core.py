@@ -198,26 +198,14 @@ def get_consumer(
         c.close()
 
 
-def _producer_handler(err, msg):
-    if err is not None:
-        logger.error(f'Failed to deliver message: {err}.')
-        # Raise exception by default
-        raise KafkaException(err)
-    else:
-        logger.debug(f'Produced to topic: {msg.topic()}.')
-
-
-@contextmanager
-def get_producer(
-    topic: str,
-    conf: dict,
-    dry=False,
-    codec: Optional[ICodec] = None,
-    flush_timeout: float = -1.0,
-    callback=_producer_handler
-) -> Iterator[Callable[[Any, Any], None]]:
-    """Yield kafka produce method."""
-    p = Producer(conf, logger=logger)
+def _producer_handler(p, topic, dry, codec):
+    def callback(err, msg):
+        if err is not None:
+            logger.error(f'Failed to deliver message: {err}.')
+            # Raise exception by default
+            raise KafkaException(err)
+        else:
+            logger.debug(f'Produced to topic: {msg.topic()}.')
 
     def produce(key, val, *args, **kwargs):
         if codec:
@@ -227,9 +215,22 @@ def get_producer(
             logger.warning(f'Skipped sending message to {topic} [dry=True].')
             return
         p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=callback)
+    return produce
 
-    yield produce
 
+@contextmanager
+def get_producer(
+    topic: str,
+    conf: dict,
+    dry=False,
+    codec: Optional[ICodec] = None,
+    flush_timeout: float = -1.0,
+    pusher=_producer_handler
+) -> Iterator[Callable[[Any, Any], None]]:
+    """Yield kafka produce method."""
+    p = Producer(conf, logger=logger)
+    yield pusher(p, topic, dry, codec)
+    logger.debug('Flushing messages to kafka, flush_timeout={flush_timeout}.')
     p.flush(flush_timeout)
 
 
@@ -260,7 +261,7 @@ class Topic(ITopic):
         codec: Optional[ICodec] = None,
         flush_timeout: float = -1.0,
         poll_timeout: float = 1.0,
-        callback=_producer_handler,
+        pusher=_producer_handler,
         poller=_consumer_handler,
         dry: bool = False
     ) -> None:
@@ -271,8 +272,10 @@ class Topic(ITopic):
         self.starting_offset = offset
         self.flush_timeout = flush_timeout
         self.poll_timeout = poll_timeout
+        self.consumer = None
         self.producer = None
-        self.callback = callback
+        self._producer_ctx = None
+        self.pusher = pusher
         self.poller = poller
         self.codec = codec
         self.dry = dry
@@ -302,10 +305,46 @@ class Topic(ITopic):
             for msg in consumer:
                 yield msg
 
+    def __next__(self) -> Any:
+        """Consume next message from topic."""
+        self.consumer = self.consumer or self.__iter__()
+        return next(self.consumer)
+
+    def __getitem__(self, i) -> Any:
+        """Consume specific range of messages from topic."""
+        if not isinstance(i, (slice, int)):
+            raise TypeError('Expected slice or int.')
+        start, step, stop = (
+            i,
+            None,
+            i + 1 if i >= 0 else None
+        ) if isinstance(i, int) else (
+            i.start,
+            i.step,
+            i.stop
+        )
+        c = get_consumer(self.name, self.conf, start, self.codec, self.poll_timeout, self.poller)
+        with c as consumer:
+            for msg in consumer:
+                if stop and msg.offset() >= stop:
+                    return
+                if step and (msg.offset() - max(0, start)) % step != 0:
+                    continue
+                yield msg
+
     def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
+        self._producer_ctx = (
+            self._producer_ctx
+            or get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.pusher)
+        )
         self.producer = (
             self.producer or
-            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.callback).__enter__()
+            self._producer_ctx.__enter__()
         )
         self.producer(key, val, *args, **kwargs)
+
+    def __del__(self):
+        """Exit potential producer instance."""
+        if self._producer_ctx:
+            self._producer_ctx.__exit__(None, None, None)
