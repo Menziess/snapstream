@@ -5,6 +5,7 @@ from typing import Iterator
 
 from avro.schema import Schema, parse
 from pytest import fixture
+from testcontainers.kafka import KafkaContainer
 
 from snapstream import Cache
 
@@ -64,3 +65,10 @@ def cache() -> Iterator[Cache]:
     finally:
         c.close()
         c.destroy()
+
+
+@fixture(scope='session')
+def kafka():
+    """Get running kafka broker."""
+    with KafkaContainer() as kafka:
+        yield kafka.get_bootstrap_server()
