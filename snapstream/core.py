@@ -230,6 +230,7 @@ def get_producer(
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
     yield pusher(p, topic, dry, codec)
+    logger.debug('Flushing messages to kafka, flush_timeout={flush_timeout}.')
     p.flush(flush_timeout)
 
 
@@ -273,6 +274,7 @@ class Topic(ITopic):
         self.poll_timeout = poll_timeout
         self.consumer = None
         self.producer = None
+        self._producer_ctx = None
         self.pusher = pusher
         self.poller = poller
         self.codec = codec
@@ -332,8 +334,17 @@ class Topic(ITopic):
 
     def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
+        self._producer_ctx = (
+            self._producer_ctx
+            or get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.pusher)
+        )
         self.producer = (
             self.producer or
-            get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.pusher).__enter__()
+            self._producer_ctx.__enter__()
         )
         self.producer(key, val, *args, **kwargs)
+
+    def __del__(self):
+        """Exit potential producer instance."""
+        if self._producer_ctx:
+            self._producer_ctx.__exit__(None, None, None)
