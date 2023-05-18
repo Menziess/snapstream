@@ -175,6 +175,8 @@ def inspect_topic(conf: dict, args: Namespace):
 
 def inspect_cache(conf: dict, args: Namespace):
     """Read records from cache."""
+    if not path.isdir(args.path):
+        raise OSError('Folder doesn\'t exist: {args.path}')
     cache = Cache(
         args.path,
         access_type=AccessType.read_only(),
