@@ -1,6 +1,7 @@
 from typing import Callable, Iterable
 
 import pytest
+from confluent_kafka.admin import NewTopic
 from pubsub import pub
 
 from snapstream import Conf
@@ -34,7 +35,7 @@ def test_Conf(mocker):
 
 
 def test_ITopic():
-    """Should not be able to instantiate incorrectly implemented codec."""
+    """Should not be able to instantiate incorrectly implemented Topic."""
     class MyFailingTopic(ITopic):
         pass
     with pytest.raises(TypeError):
@@ -54,6 +55,33 @@ def test_get_producer(mocker):
         p('test', 'test')
 
 
-def test_Topic():
-    """Should ..."""
-    assert Topic
+def test_Topic(mocker):
+    """Should use provided poller and callback to interact with Kafka."""
+    admin = mocker.stub(name='admin')
+    mocker.patch('confluent_kafka.admin.AdminClient.create_topics', admin)
+    poller = mocker.MagicMock(return_value=[
+        mocker.Mock(
+            key=lambda: 123,
+            value=lambda: 'message'
+        )
+    ])
+    produce = mocker.stub(name='produce')
+    pusher = mocker.MagicMock(return_value=produce)
+
+    t = Topic('test', {
+        'group.id': 'test'
+    }, poller=poller, pusher=pusher)
+
+    # Should try and create topic
+    t.create_topic()
+    admin.assert_called_once_with([NewTopic(topic='test')])
+
+    # Should try and consume messages
+    for msg in t:
+        assert msg.key() == 123
+        assert msg.value() == 'message'
+    poller.assert_called_once()
+
+    # Should try and produce messages
+    t('test')
+    produce.assert_called_once_with(None, 'test')
