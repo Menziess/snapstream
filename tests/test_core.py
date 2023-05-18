@@ -57,12 +57,13 @@ def test_get_producer(mocker):
 
 def test_Topic(mocker):
     """Should use provided poller and callback to interact with Kafka."""
+    key, val = 123, 'message'
     admin = mocker.stub(name='admin')
     mocker.patch('confluent_kafka.admin.AdminClient.create_topics', admin)
     poller = mocker.MagicMock(return_value=[
         mocker.Mock(
-            key=lambda: 123,
-            value=lambda: 'message'
+            key=lambda: key,
+            value=lambda: val
         )
     ])
     produce = mocker.stub(name='produce')
@@ -78,10 +79,10 @@ def test_Topic(mocker):
 
     # Should try and consume messages
     for msg in t:
-        assert msg.key() == 123
-        assert msg.value() == 'message'
+        assert msg.key() == key
+        assert msg.value() == val
     poller.assert_called_once()
 
     # Should try and produce messages
-    t('test')
-    produce.assert_called_once_with(None, 'test')
+    t(val, key)
+    produce.assert_called_once_with(key, val)
