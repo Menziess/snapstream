@@ -70,5 +70,7 @@ def cache() -> Iterator[Cache]:
 @fixture(scope='session')
 def kafka():
     """Get running kafka broker."""
-    with KafkaContainer() as kafka:
-        yield kafka.get_bootstrap_server()
+    kafka = KafkaContainer()
+    kafka.start()
+    yield kafka.get_bootstrap_server()
+    kafka.stop()
