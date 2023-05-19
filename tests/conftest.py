@@ -74,5 +74,5 @@ def kafka():
     kafka = KafkaContainer()
     kafka.start()
     yield kafka.get_bootstrap_server()
-    sleep(2)  # leeway time to flush messages
+    sleep(5)  # leeway time to flush messages
     kafka.stop()

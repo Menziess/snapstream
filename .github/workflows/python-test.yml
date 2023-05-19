@@ -46,10 +46,15 @@ jobs:
           .\.venv\Scripts\Activate.ps1
           echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Run linting & tests
+      - name: Run linting & unit tests
         run: |
           bandit -c pyproject.toml -r snapstream tests
           pydocstyle snapstream tests
           pyright snapstream tests
           flake8 snapstream tests
-          pytest snapstream tests
+          pytest snapstream tests --ignore tests/integration/
+
+      - name: Run integration tests unix
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        run: |
+          pytest tests/integration/
