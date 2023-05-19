@@ -1,6 +1,7 @@
 """Common testing functionalities."""
 
 from json import dumps
+from time import sleep
 from typing import Iterator
 
 from avro.schema import Schema, parse
@@ -73,4 +74,5 @@ def kafka():
     kafka = KafkaContainer()
     kafka.start()
     yield kafka.get_bootstrap_server()
+    sleep(2)  # leeway time to flush messages
     kafka.stop()
