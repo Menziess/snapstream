@@ -48,7 +48,7 @@ jobs:
 
       - name: Run linting & tests
         run: |
-          bandit -c pyproject.toml .
+          bandit -c pyproject.toml -r
           pydocstyle .
           pyright .
           flake8 .
