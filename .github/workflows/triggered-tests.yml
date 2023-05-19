@@ -1,0 +1,21 @@
+name: Triggered Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  python-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10"]
+    uses: ./.github/workflows/reusable/python-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
