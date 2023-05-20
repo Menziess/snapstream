@@ -168,7 +168,7 @@ def inspect_topic(conf: dict, args: Namespace):
             print('>>> timestamp:', timestamp)
             print('>>> offset:', offset)
             print('>>> key:', key)
-            print(val.decode()) if not args.columns else print({
+            print(val) if not args.columns else print({
                 k: v for k, v in val.items() if k in args.columns.split(',')
             })
 
@@ -176,7 +176,7 @@ def inspect_topic(conf: dict, args: Namespace):
 def inspect_cache(conf: dict, args: Namespace):
     """Read records from cache."""
     if not path.isdir(args.path):
-        raise OSError('Folder doesn\'t exist: {args.path}')
+        raise OSError(f'Folder doesn\'t exist: {args.path}')
     cache = Cache(
         args.path,
         access_type=AccessType.read_only(),
