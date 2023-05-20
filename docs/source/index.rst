@@ -41,7 +41,6 @@ Snapstream can be summarized as:
 - Any callable can be used as a sink
 
 .. image:: ../../res/demo.gif
-   :scale: 90 %
 
 - When we call ``stream()``, each iterable is processed in a separate thread
 - Elements are published to each ``snap`` decorated handler function
@@ -65,6 +64,7 @@ These simple concepts offer interesting ways to establish complex stateful strea
 
    install
    examples
+   cli
 
 .. toctree::
    :maxdepth: 1
