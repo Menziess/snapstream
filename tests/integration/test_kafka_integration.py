@@ -1,11 +1,33 @@
+"""Kafka is not isolated, bear in mind when writing tests."""
+
+import logging
+
 from snapstream import Topic
 
 
-def test_kafka(kafka):
-    """Should be able to interact with kafka."""
+def test_produce_no_kafka(caplog):
+    """Should fail to connect to missing broker."""
+    t = Topic('test', {
+        'bootstrap.servers': 'localhost:xxxx',
+        'auto.offset.reset': 'earliest',
+        'group.instance.id': 'test',
+        'group.id': 'test',
+    }, flush_timeout=0.01)
+
+    t('test')
+    del t  # trigger flush (with 0.01s timeout)
+
+    _, lvl, log = caplog.record_tuples[0]
+    assert lvl == logging.ERROR
+    assert 'Failed to connect' in log
+
+
+def test_produce_consume(kafka):
+    """Should be able to exchange messages with kafka."""
     t = Topic('test', {
         'bootstrap.servers': kafka,
         'auto.offset.reset': 'earliest',
+        'group.instance.id': 'test',
         'group.id': 'test',
     })
 
