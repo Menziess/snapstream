@@ -8,7 +8,7 @@ from snapstream import Topic
 def test_produce_no_kafka(caplog):
     """Should fail to connect to missing broker."""
     t = Topic('test', {
-        'bootstrap.servers': 'localhost:xxxx',
+        'bootstrap.servers': 'localhost:1000',
         'auto.offset.reset': 'earliest',
         'group.instance.id': 'test',
         'group.id': 'test',
@@ -19,7 +19,7 @@ def test_produce_no_kafka(caplog):
 
     _, lvl, log = caplog.record_tuples[0]
     assert lvl == logging.ERROR
-    assert 'Failed to connect' in log
+    assert 'Connection refused' in log
 
 
 def test_produce_consume(kafka):
