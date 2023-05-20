@@ -2,11 +2,13 @@
 
 import logging
 
+import pytest
+
 from snapstream import Topic
 
 
 def test_produce_no_kafka(caplog):
-    """Should fail to connect to missing broker."""
+    """Should fail to produce to missing broker."""
     t = Topic('test', {
         'bootstrap.servers': 'localhost:1000',
         'auto.offset.reset': 'earliest',
@@ -19,6 +21,26 @@ def test_produce_no_kafka(caplog):
 
     _, lvl, log = caplog.record_tuples[0]
     assert lvl == logging.ERROR
+    assert log.startswith('FAIL [rdkafka#producer-')
+    assert 'Connection refused' in log
+
+
+def test_consume_no_kafka(caplog, timeout):
+    """Should fail to consume from missing broker."""
+    t = Topic('test', {
+        'bootstrap.servers': 'localhost:1000',
+        'auto.offset.reset': 'earliest',
+        'group.instance.id': 'test',
+        'group.id': 'test',
+    })
+
+    with pytest.raises(TimeoutError):
+        with timeout(1):
+            next(t)
+
+    _, lvl, log = caplog.record_tuples[0]
+    assert lvl == logging.ERROR
+    assert log.startswith('FAIL [rdkafka#consumer-')
     assert 'Connection refused' in log
 
 
