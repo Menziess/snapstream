@@ -1,7 +1,8 @@
 """Common testing functionalities."""
 
+import signal
+from contextlib import contextmanager
 from json import dumps
-from time import sleep
 from typing import Iterator
 
 from avro.schema import Schema, parse
@@ -75,3 +76,18 @@ def kafka():
     kafka.start()
     yield kafka.get_bootstrap_server()
     kafka.stop()
+
+
+@fixture
+def timeout():
+    """Contextmanager that will stop execution of body."""
+    @contextmanager
+    def set_timeout(seconds: int):
+        def raise_timeout(*_):
+            raise TimeoutError(f'Timeout reached: {seconds}.')
+
+        def start_timeout():
+            signal.signal(signal.SIGALRM, raise_timeout)
+            signal.alarm(seconds)
+        yield start_timeout()
+    return set_timeout
