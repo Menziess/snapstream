@@ -1,10 +1,13 @@
 """Common testing functionalities."""
 
+import signal
+from contextlib import contextmanager
 from json import dumps
 from typing import Iterator
 
 from avro.schema import Schema, parse
 from pytest import fixture
+from testcontainers.kafka import KafkaContainer
 
 from snapstream import Cache
 
@@ -64,3 +67,27 @@ def cache() -> Iterator[Cache]:
     finally:
         c.close()
         c.destroy()
+
+
+@fixture(scope='session')
+def kafka():
+    """Get running kafka broker."""
+    kafka = KafkaContainer()
+    kafka.start()
+    yield kafka.get_bootstrap_server()
+    kafka.stop()
+
+
+@fixture
+def timeout():
+    """Contextmanager that will stop execution of body."""
+    @contextmanager
+    def set_timeout(seconds: int):
+        def raise_timeout(*_):
+            raise TimeoutError(f'Timeout reached: {seconds}.')
+
+        def start_timeout():
+            signal.signal(signal.SIGALRM, raise_timeout)
+            signal.alarm(seconds)
+        yield start_timeout()
+    return set_timeout

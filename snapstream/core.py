@@ -19,7 +19,6 @@ from snapstream.codecs import ICodec
 from snapstream.utils import KafkaIgnoredPropertyFilter, Singleton
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 logger.addFilter(KafkaIgnoredPropertyFilter())
 
 READ_FROM_START = -2
@@ -230,7 +229,7 @@ def get_producer(
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
     yield pusher(p, topic, dry, codec)
-    logger.debug('Flushing messages to kafka, flush_timeout={flush_timeout}.')
+    logger.debug(f'Flushing messages to kafka, flush_timeout={flush_timeout}.')
     p.flush(flush_timeout)
 
 
