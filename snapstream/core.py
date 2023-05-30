@@ -197,7 +197,7 @@ def get_consumer(
         c.close()
 
 
-def _producer_handler(p, topic, dry, codec):
+def _producer_handler(p, topic, poll_timeout, codec, dry):
     def callback(err, msg):
         if err is not None:
             logger.error(f'Failed to deliver message: {err}.')
@@ -214,6 +214,7 @@ def _producer_handler(p, topic, dry, codec):
             logger.warning(f'Skipped sending message to {topic} [dry=True].')
             return
         p.produce(topic=topic, key=key, value=val, *args, **kwargs, callback=callback)
+        p.poll(poll_timeout)
     return produce
 
 
@@ -223,12 +224,13 @@ def get_producer(
     conf: dict,
     dry=False,
     codec: Optional[ICodec] = None,
+    poll_timeout: float = 1.0,
     flush_timeout: float = -1.0,
     pusher=_producer_handler
 ) -> Iterator[Callable[[Any, Any], None]]:
     """Yield kafka produce method."""
     p = Producer(conf, logger=logger)
-    yield pusher(p, topic, dry, codec)
+    yield pusher(p, topic, poll_timeout, codec, dry)
     logger.debug(f'Flushing messages to kafka, flush_timeout={flush_timeout}.')
     p.flush(flush_timeout)
 
@@ -335,7 +337,8 @@ class Topic(ITopic):
         """Produce to topic."""
         self._producer_ctx = (
             self._producer_ctx
-            or get_producer(self.name, self.conf, self.dry, self.codec, self.flush_timeout, self.pusher)
+            or get_producer(self.name, self.conf, self.dry, self.codec,
+                            self.poll_timeout, self.flush_timeout, self.pusher)
         )
         self.producer = (
             self.producer or

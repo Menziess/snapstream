@@ -17,12 +17,14 @@ def test_produce_no_kafka(caplog):
     }, flush_timeout=0.01)
 
     t('test')
-    del t  # trigger flush (with 0.01s timeout)
-
+    t('test')  # second call triggers poll() for first message
     _, lvl, log = caplog.record_tuples[0]
+
     assert lvl == logging.ERROR
     assert log.startswith('FAIL [rdkafka#producer-')
     assert 'Connection refused' in log
+
+    del t  # trigger flush (with 0.01s timeout)
 
 
 def test_consume_no_kafka(caplog, timeout):
