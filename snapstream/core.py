@@ -45,7 +45,7 @@ class Conf(metaclass=Singleton):
         try:
             for el in it:
                 pub.sendMessage(iterable_key, msg=el, kwargs=kwargs)
-        except Exception as e:
+        except BaseException as e:
             logger.debug(f'Exception in thread {current_thread().name}.')
             queue.put(e)
         finally:
