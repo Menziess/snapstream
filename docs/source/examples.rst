@@ -109,7 +109,7 @@ Conf can be used to set default kafka configurations.
   {'bootstrap.servers': 'localhost:29091', 'group.id': 'demo', 'security.protocol': 'SASL_SSL', 'sasl.mechanism': 'PLAIN', 'sasl.username': 'myuser', 'sasl.password': 'mypass'}
 
 Yield
-----------------------
+-----
 
 When your handler function returns zero or more values, use ``yield`` instead of ``return``.
 
@@ -134,7 +134,7 @@ When your handler function returns zero or more values, use ``yield`` instead of
   equal: 4
 
 Timer
-------------------
+-----
 
 If there's no incoming data, generators can be used to trigger handler functions.
 
@@ -217,7 +217,7 @@ Codecs are used for serializing and deserializing data.
         return cast(object, val)
 
 Slicing
------
+-------
 
 To read a specific range or single offset from kafka, use the slice notation:
 
