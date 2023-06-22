@@ -96,7 +96,7 @@ Conf can be used to set default kafka configurations.
       'sasl.password': 'mypass',
   })
 
-  topic2 = Topic('tweets', {'group.id': 'demo'})
+  topic2 = Topic('conf', {'group.id': 'demo'})
 
   print(topic1.conf)
   print(topic2.conf)
@@ -176,7 +176,7 @@ Codecs are used for serializing and deserializing data.
   from snapstream import Topic
   from snapstream.codecs import JsonCodec, ICodec
 
-  topic = Topic('codec-demo', {
+  topic = Topic('codecs', {
       'bootstrap.servers': 'localhost:29091',
       'auto.offset.reset': 'earliest',
       'group.instance.id': 'demo',
@@ -225,7 +225,7 @@ To read a specific range or single offset from kafka, use the slice notation:
 
   from snapstream import Topic
 
-  topic = Topic('a', {
+  topic = Topic('slicing', {
       'bootstrap.servers': 'localhost:29091',
       'auto.offset.reset': 'earliest',
       'group.instance.id': 'demo',

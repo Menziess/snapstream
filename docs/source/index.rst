@@ -39,6 +39,7 @@ A typical hello-world application would look something like this:
    kafka
    install
    examples
+   testing
    cli
 
 .. toctree::
