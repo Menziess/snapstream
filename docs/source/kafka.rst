@@ -3,7 +3,15 @@
 Kafka
 =====
 
-When we introduce kafka, this is what it looks like:
+Spin up a local kafka broker using `docker-compose.yml <https://github.com/Menziess/snapstream/blob/master/docker-compose.yml>`_ to follow along:
+
+.. code-block:: bash
+
+  docker compose up broker -d
+
+**Note:** check the logs before sending messages to Kafka, these messages may not be delivered until the broker is ready.
+
+Here's the hello-world application using Kafka:
 
 ::
 
@@ -33,13 +41,15 @@ When we introduce kafka, this is what it looks like:
 
   stream()
 
+Some basic principles to remember:
+
 - Any `iterable <https://pythonbasics.org/iterable/>`_ may act as a source of data
 - Any callable can be used as a sink
 
 .. image:: ../../res/demo.gif
 
 - When we call ``stream()``, each iterable is processed in a separate thread
-- Elements are published to each ``snap`` decorated handler function
+- Elements are published to each handler function (that's decorated using ``snap``)
 
 ::
 

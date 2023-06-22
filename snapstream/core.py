@@ -184,7 +184,7 @@ def get_consumer(
     def consume():
         def on_assign(c, ps):
             for p in ps:
-                if offset:
+                if offset is not None:
                     p.offset = offset
             c.assign(ps)
 

@@ -3,13 +3,7 @@
 Examples
 ============
 
-Spin up a local kafka broker using `docker-compose.yml <https://github.com/Menziess/snapstream/blob/master/docker-compose.yml>`_ to follow along:
-
-.. code-block:: bash
-
-  docker compose up broker -d
-
-Can't find what you seek? Create a `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
+Each example is self-contained. Can't find what you seek? Create a `new issue <https://github.com/Menziess/snapstream/issues/new>`_.
 
 Topic
 -----
@@ -221,3 +215,61 @@ Codecs are used for serializing and deserializing data.
         """Deserialize message."""
         val = deserialize_avro(self.schema, s)
         return cast(object, val)
+
+Slicing
+-----
+
+To read a specific range or single offset from kafka, use the slice notation:
+
+::
+
+  from snapstream import Topic
+
+  topic = Topic('a', {
+      'bootstrap.servers': 'localhost:29091',
+      'auto.offset.reset': 'earliest',
+      'group.instance.id': 'demo',
+      'group.id': 'demo',
+  })
+
+  for x in '🏆', '📞', '🐟', '👌':
+      topic(x)
+
+  for x in topic[3]:
+      print(x.value().decode(), x.offset())
+
+It's recommended to never use ``list`` or any active operation that collects all data, as the stream may be unbounded.
+Here's the message at offset 3:
+
+::
+
+  👌 3
+
+If we want to get offsets 0 up until 3, we can slice the topic:
+
+::
+
+  for x in topic[0:3]:
+      print(x.value().decode(), x.offset())
+
+::
+
+  🏆 0
+  📞 1
+  🐟 2
+
+If the retention period could have surpassed that of the first message, it's worth using ``-2`` as the first offset.
+In the following snippet, we also pass a step of ``2``, taking every second message:
+
+::
+
+  for x in topic[-2::2]:
+      print(x.value().decode(), x.offset())
+
+::
+
+  🏆 0
+  🐟 2
+  ...
+
+You'll also notice that the program keeps waiting until the stop condition has been met.
