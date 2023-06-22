@@ -1,3 +1,4 @@
+from avro.schema import parse
 import pytest
 
 from snapstream.codecs import (AvroCodec, ICodec, JsonCodec, deserialize_avro,
@@ -47,5 +48,12 @@ def test_AvroCodec(raw_msg, avro_msg, avro_schema, mocker):
     )
     mocker.patch('builtins.open', mock_schema)
     c = AvroCodec('schema/myschema.avsc')
+    assert c.encode(raw_msg) == avro_msg
+    assert c.decode(avro_msg) == raw_msg
+
+    with open('schema/myschema.avsc') as a:
+        schema = parse(a.read())
+
+    c = AvroCodec(schema)
     assert c.encode(raw_msg) == avro_msg
     assert c.decode(avro_msg) == raw_msg

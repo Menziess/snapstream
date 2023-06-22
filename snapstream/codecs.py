@@ -4,7 +4,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
 from json import dumps, loads
-from typing import Any, cast
+from typing import Any, Union, cast
 
 from avro.io import BinaryDecoder, BinaryEncoder, DatumReader, DatumWriter
 from avro.schema import Schema, parse
@@ -80,10 +80,15 @@ class JsonCodec(ICodec):
 class AvroCodec(ICodec):
     """Serialize/deserialize avro messages."""
 
-    def __init__(self, path: str):
+    def __init__(self, schema: Union[str, Schema]):
         """Load avro schema."""
-        with open(path) as a:
-            self.schema = parse(a.read())
+        if isinstance(schema, Schema):
+            self.schema = schema
+        elif isinstance(schema, str):
+            with open(schema) as a:
+                self.schema = parse(a.read())
+        else:
+            raise TypeError('Expected .avsc filepath str, or avro.schema.Schema instance.')
 
     def encode(self, obj: Any) -> bytes:
         """Serialize message."""
