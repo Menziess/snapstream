@@ -5,63 +5,38 @@ Snapstream documentation
 
 Snapstream can be summarized as:
 
-- Two functions: ``snap`` and ``stream`` (the data-flow model)
 - ``Topic``: default way to interact with kafka
 - ``Cache``: default persistence functionality
+- ``snap`` and ``stream``: a data-flow model used to parallelize stream processing
+
+A typical hello-world application would look something like this:
 
 ::
 
-  from time import sleep
-
-  from snapstream import Topic, snap, stream
+  from snapstream import snap, stream
 
   messages = ('🏆', '📞', '🐟', '👌')
 
-  t = Topic('emoji', {
-      'bootstrap.servers': 'localhost:29091',
-      'auto.offset.reset': 'earliest',
-      'group.instance.id': 'demo',
-      'group.id': 'demo',
-  })
 
-  @snap(messages, sink=[t])
+  @snap(iter(messages), sink=[print])
   def produce(msg):
-      sleep(0.5)
-      print(f'producing {msg}')
-      return msg
+      return f'Hello {msg}!'
 
-  @snap(t, sink=[print])
-  def consume(msg):
-      val = msg.value().decode()
-      return f'got: {val}'
 
   stream()
 
-- Any `iterable <https://pythonbasics.org/iterable/>`_ may act as a source of data
-- Any callable can be used as a sink
-
-.. image:: ../../res/demo.gif
-
-- When we call ``stream()``, each iterable is processed in a separate thread
-- Elements are published to each ``snap`` decorated handler function
-
 ::
 
-  Producing 🏆
-  got: 🏆
-  Producing 📞
-  got: 📞
-  Producing 🐟
-  got: 🐟
-  Producing 👌
-  got: 👌
-
-These simple concepts offer interesting ways to establish complex stateful streams.
+  Hello 🏆!
+  Hello 📞!
+  Hello 🐟!
+  Hello 👌!
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   kafka
    install
    examples
    cli
