@@ -144,7 +144,7 @@ class ITopic(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-def _consumer_handler(c, conf, poll_timeout, codec):
+def _consumer_handler(c, conf, poll_timeout, codec, raise_error):
     manual_commit = pipe(
         conf.get('enable.auto.commit'),
         str,
@@ -156,7 +156,8 @@ def _consumer_handler(c, conf, poll_timeout, codec):
         if msg is None:
             continue
         if err := msg.error():
-            raise KafkaException(err)
+            if raise_error:
+                raise KafkaException(err)
         if codec:
             decoded_val = codec.decode(msg.value())
             msg.set_value(decoded_val)
@@ -174,7 +175,8 @@ def get_consumer(
     offset=None,
     codec: Optional[ICodec] = None,
     poll_timeout: float = 1.0,
-    poller=_consumer_handler
+    poller=_consumer_handler,
+    raise_error=False
 ) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
@@ -189,7 +191,7 @@ def get_consumer(
         logger.debug(f'Subscribing to topic: {topic}.')
         c.subscribe([topic], on_assign=on_assign)
         logger.debug(f'Consuming from topic: {topic}.')
-        yield from poller(c, conf, poll_timeout, codec)
+        yield from poller(c, conf, poll_timeout, codec, raise_error)
 
     try:
         yield consume()
