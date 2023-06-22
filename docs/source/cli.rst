@@ -9,6 +9,24 @@ The snapstream cli tool allows you to inspect any ``Topic`` or ``Cache``:
 
   snapstream --help
 
+When providing an action; `topic` or `cache`, the configurations can be saved to a config file; `~/.snapstreamcfg`, which may look like this:
+
+::
+
+  [
+    {
+        "type": "Topic",
+        "name": "demo",
+        "conf": {
+            "bootstrap.servers": "localhost:29091",
+            "sasl.username": "\\$ConnectionString",
+            "sasl.password": "$MY_PASSWORD"
+        }
+    }
+  ]
+
+Environment variables may be referenced by prepending the ``$`` character. Which can be escaped by prepending ``\\`` in front of ``$``.
+
 Cache
 -----
 
