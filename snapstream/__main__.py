@@ -29,7 +29,7 @@ def get_args(args=argv[1:]) -> Namespace:
     subparsers = parser.add_subparsers(dest='action', required=True)
     parser.add_argument('--config-path', type=str, default=DEFAULT_CONFIG_PATH,
                         help='file containing topic/cache configurations')
-    parser.add_argument('--secrets-base-path', type=str, default='',
+    parser.add_argument('--secrets-base-path', type=str, default='/etc/secrets',
                         help='folder containing secret files')
 
     topic = subparsers.add_parser('topic', help='read messages from Topic')
