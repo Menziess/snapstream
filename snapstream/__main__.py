@@ -60,22 +60,24 @@ def get_args(args=argv[1:]) -> Namespace:
     return parser.parse_args(args)
 
 
-def default_topic_entry(name: str, prep: Callable) -> dict:
+def default_topic_entry(args: Namespace, prep: Callable) -> dict:
     """Create default topic entry."""
     return {
         'type': 'Topic',
-        'name': prep(name),
+        'name': prep(args.name),
         'conf': {
             'bootstrap.servers': 'localhost:29091',
-        }
+        },
+        'schema_path': args.schema,
+        'secrets_base_path': args.secrets_base_path
     }
 
 
-def default_cache_entry(path: str, prep: Callable) -> dict:
+def default_cache_entry(args: Namespace, prep: Callable) -> dict:
     """Create default topic entry."""
     return {
         'type': 'Cache',
-        'path': prep(path),
+        'path': prep(args.path),
         'conf': {}
     }
 
@@ -111,8 +113,8 @@ def get_config_entry(config_path: str, args: Namespace) -> dict:
 
     # If not found, create entry
     entry = (
-        default_topic_entry(args.name, prep) if args.action == 'topic'
-        else default_cache_entry(args.path, prep) if args.action == 'cache'
+        default_topic_entry(args, prep) if args.action == 'topic'
+        else default_cache_entry(args, prep) if args.action == 'cache'
         else {}
     )
     config.append(entry)
