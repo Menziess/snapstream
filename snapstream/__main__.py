@@ -144,14 +144,16 @@ def regex_filter(regex: str, key: Optional[str]) -> bool:
     return True
 
 
-def inspect_topic(conf: dict, args: Namespace):
+def inspect_topic(entry: dict, args: Namespace):
     """Read messages from topic."""
+    conf = entry['conf']
     if 'group.id' not in conf:
         conf['group.id'] = '$Default'
     if 'group.instance.id' not in conf:
         conf['group.instance.id'] = '$Default'
 
-    schema = AvroCodec(args.schema) if args.schema else None
+    schema_path = args.schema or entry.get('schema_path')
+    schema = AvroCodec(args.schema) if schema_path else None
     key_filter = curry(regex_filter)(args.key_filter)
     val_filter = curry(regex_filter)(args.val_filter)
 
@@ -175,7 +177,7 @@ def inspect_topic(conf: dict, args: Namespace):
             })
 
 
-def inspect_cache(conf: dict, args: Namespace):
+def inspect_cache(entry: dict, args: Namespace):
     """Read records from cache."""
     if not path.isdir(args.path):
         raise OSError(f'Folder doesn\'t exist: {args.path}')
@@ -221,7 +223,7 @@ def main():
         {
             'topic': inspect_topic,
             'cache': inspect_cache,
-        }[args.action](entry['conf'], args)
+        }[args.action](entry, args)
     except KeyboardInterrupt:
         print('\nYou stopped the program.')
 
