@@ -152,24 +152,30 @@ def inspect_topic(entry: dict, args: Namespace):
     if 'group.instance.id' not in conf:
         conf['group.instance.id'] = '$Default'
 
+    start_time = dt.now(tz=timezone.utc)
     schema_path = args.schema or entry.get('schema_path')
     schema = AvroCodec(args.schema) if schema_path else None
     key_filter = curry(regex_filter)(args.key_filter)
     val_filter = curry(regex_filter)(args.val_filter)
 
     for msg in Topic(args.name, conf, args.offset, schema):
-        timestamp = (
-            dt
-            .fromtimestamp(msg.timestamp()[-1] / 1000, tz=timezone.utc)
-            .isoformat()
-            if msg.timestamp() else ''
-        )
+        if msg.timestamp():
+            timestamp = (
+                dt
+                .fromtimestamp(msg.timestamp()[-1] / 1000, tz=timezone.utc)
+            )
+            timestamp_str = timestamp.isoformat()
+        else:
+            timestamp, timestamp_str = None, ''
         key = msg.key().decode() if msg.key() is not None else ''
         offset = msg.offset()
         val = msg.value()
         if key_filter(str(key)) and val_filter(str(val)):  # pyright: ignore
             print()
-            print('>>> timestamp:', timestamp)
+            if timestamp and timestamp < start_time:
+                print('>>> timestamp:', timestamp_str, '(catching up)')
+            else:
+                print('>>> timestamp:', timestamp_str)
             print('>>> offset:', offset)
             print('>>> key:', key)
             print(val) if not args.columns else print({
