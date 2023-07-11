@@ -11,6 +11,8 @@ from testcontainers.kafka import KafkaContainer
 
 from snapstream import Cache
 
+KAFKA_CONTAINER = 'confluentinc/cp-kafka:7.4.0'
+
 _avro_schema = parse(dumps({
     'type': 'record',
     'name': 'testing',
@@ -72,7 +74,7 @@ def cache() -> Iterator[Cache]:
 @fixture(scope='session')
 def kafka():
     """Get running kafka broker."""
-    kafka = KafkaContainer()
+    kafka = KafkaContainer(KAFKA_CONTAINER)
     kafka.start()
     yield kafka.get_bootstrap_server()
     kafka.stop()
