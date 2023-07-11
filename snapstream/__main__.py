@@ -29,7 +29,7 @@ def get_args(args=argv[1:]) -> Namespace:
     subparsers = parser.add_subparsers(dest='action', required=True)
     parser.add_argument('--config-path', type=str, default=DEFAULT_CONFIG_PATH,
                         help='file containing topic/cache configurations')
-    parser.add_argument('--secrets-base-path', type=str, default='',
+    parser.add_argument('--secrets-base-path', type=str, default='/etc/secrets',
                         help='folder containing secret files')
 
     topic = subparsers.add_parser('topic', help='read messages from Topic')
@@ -60,22 +60,24 @@ def get_args(args=argv[1:]) -> Namespace:
     return parser.parse_args(args)
 
 
-def default_topic_entry(name: str, prep: Callable) -> dict:
+def default_topic_entry(args: Namespace, prep: Callable) -> dict:
     """Create default topic entry."""
     return {
         'type': 'Topic',
-        'name': prep(name),
+        'name': prep(args.name),
         'conf': {
             'bootstrap.servers': 'localhost:29091',
-        }
+        },
+        'schema_path': args.schema,
+        'secrets_base_path': args.secrets_base_path
     }
 
 
-def default_cache_entry(path: str, prep: Callable) -> dict:
+def default_cache_entry(args: Namespace, prep: Callable) -> dict:
     """Create default topic entry."""
     return {
         'type': 'Cache',
-        'path': prep(path),
+        'path': prep(args.path),
         'conf': {}
     }
 
@@ -111,8 +113,8 @@ def get_config_entry(config_path: str, args: Namespace) -> dict:
 
     # If not found, create entry
     entry = (
-        default_topic_entry(args.name, prep) if args.action == 'topic'
-        else default_cache_entry(args.path, prep) if args.action == 'cache'
+        default_topic_entry(args, prep) if args.action == 'topic'
+        else default_cache_entry(args, prep) if args.action == 'cache'
         else {}
     )
     config.append(entry)
@@ -142,30 +144,38 @@ def regex_filter(regex: str, key: Optional[str]) -> bool:
     return True
 
 
-def inspect_topic(conf: dict, args: Namespace):
+def inspect_topic(entry: dict, args: Namespace):
     """Read messages from topic."""
+    conf = entry['conf']
     if 'group.id' not in conf:
         conf['group.id'] = '$Default'
     if 'group.instance.id' not in conf:
         conf['group.instance.id'] = '$Default'
 
-    schema = AvroCodec(args.schema) if args.schema else None
+    start_time = dt.now(tz=timezone.utc)
+    schema_path = args.schema or entry.get('schema_path')
+    schema = AvroCodec(args.schema) if schema_path else None
     key_filter = curry(regex_filter)(args.key_filter)
     val_filter = curry(regex_filter)(args.val_filter)
 
     for msg in Topic(args.name, conf, args.offset, schema):
-        timestamp = (
-            dt
-            .fromtimestamp(msg.timestamp()[-1] / 1000, tz=timezone.utc)
-            .isoformat()
-            if msg.timestamp() else ''
-        )
+        if msg.timestamp():
+            timestamp = (
+                dt
+                .fromtimestamp(msg.timestamp()[-1] / 1000, tz=timezone.utc)
+            )
+            timestamp_str = timestamp.isoformat()
+        else:
+            timestamp, timestamp_str = None, ''
         key = msg.key().decode() if msg.key() is not None else ''
         offset = msg.offset()
         val = msg.value()
         if key_filter(str(key)) and val_filter(str(val)):  # pyright: ignore
             print()
-            print('>>> timestamp:', timestamp)
+            if timestamp and timestamp < start_time:
+                print('>>> timestamp:', timestamp_str, '(catching up)')
+            else:
+                print('>>> timestamp:', timestamp_str)
             print('>>> offset:', offset)
             print('>>> key:', key)
             print(val) if not args.columns else print({
@@ -173,7 +183,7 @@ def inspect_topic(conf: dict, args: Namespace):
             })
 
 
-def inspect_cache(conf: dict, args: Namespace):
+def inspect_cache(entry: dict, args: Namespace):
     """Read records from cache."""
     if not path.isdir(args.path):
         raise OSError(f'Folder doesn\'t exist: {args.path}')
@@ -219,7 +229,7 @@ def main():
         {
             'topic': inspect_topic,
             'cache': inspect_cache,
-        }[args.action](entry['conf'], args)
+        }[args.action](entry, args)
     except KeyboardInterrupt:
         print('\nYou stopped the program.')
 

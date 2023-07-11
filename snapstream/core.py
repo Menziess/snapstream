@@ -156,8 +156,11 @@ def _consumer_handler(c, conf, poll_timeout, codec, raise_error):
         if msg is None:
             continue
         if err := msg.error():
-            if raise_error:
+            if raise_error or err.fatal() or not err.retriable():
                 raise KafkaException(err)
+            else:
+                logger.error(msg.error())
+                continue
         if codec:
             decoded_val = codec.decode(msg.value())
             msg.set_value(decoded_val)
