@@ -21,7 +21,9 @@ When providing an action; `topic` or `cache`, the configurations can be saved to
             "bootstrap.servers": "localhost:29091",
             "sasl.username": "\\$ConnectionString",
             "sasl.password": "$MY_PASSWORD"
-        }
+        },
+        "schema_path": "schemas/my-schema.avsc",
+        "secrets_base_path": "/etc/secrets"
     }
   ]
 
