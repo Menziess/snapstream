@@ -269,7 +269,8 @@ class Topic(ITopic):
         poll_timeout: float = 1.0,
         pusher=_producer_handler,
         poller=_consumer_handler,
-        dry: bool = False
+        dry: bool = False,
+        raise_error: bool = False
     ) -> None:
         """Pass topic related configuration."""
         c = Conf()
@@ -285,6 +286,7 @@ class Topic(ITopic):
         self.poller = poller
         self.codec = codec
         self.dry = dry
+        self.raise_error = raise_error
 
     def admin(self):
         """Get admin client."""
@@ -306,7 +308,8 @@ class Topic(ITopic):
 
     def __iter__(self) -> Iterator[Any]:
         """Consume from topic."""
-        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec, self.poll_timeout, self.poller)
+        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec,
+                         self.poll_timeout, self.poller, self.raise_error)
         with c as consumer:
             for msg in consumer:
                 yield msg
@@ -329,7 +332,8 @@ class Topic(ITopic):
             i.step,
             i.stop
         )
-        c = get_consumer(self.name, self.conf, start, self.codec, self.poll_timeout, self.poller)
+        c = get_consumer(self.name, self.conf, start, self.codec,
+                         self.poll_timeout, self.poller, self.raise_error)
         with c as consumer:
             for msg in consumer:
                 if stop and msg.offset() >= stop:
