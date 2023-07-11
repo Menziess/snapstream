@@ -120,7 +120,7 @@ When your handler function returns zero or more values, use ``yield`` instead of
   @snap(range(5), sink=[print])
   def handler(n):
       if n % 2 == 0:
-          yield f'equal: {n}'
+          yield f'even: {n}'
       if n == 0:
           yield f'zero: {n}'
 
@@ -128,10 +128,10 @@ When your handler function returns zero or more values, use ``yield`` instead of
 
 ::
 
-  equal: 0
+  even: 0
   zero: 0
-  equal: 2
-  equal: 4
+  even: 2
+  even: 4
 
 Timer
 -----

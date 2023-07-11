@@ -21,7 +21,7 @@ The following snippet is out ``main.py`` file. Let's say that we want to test ou
       'group.id': 'demo',
   })
 
-  @snap(messages, sink=[t, cache])
+  @snap(messages, sink=[t, c])
   def produce(msg):
       sleep(0.5)
       print(f'producing {msg}')
