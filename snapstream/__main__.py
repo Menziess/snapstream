@@ -154,7 +154,7 @@ def inspect_topic(entry: dict, args: Namespace):
 
     start_time = dt.now(tz=timezone.utc)
     schema_path = args.schema or entry.get('schema_path')
-    schema = AvroCodec(args.schema) if schema_path else None
+    schema = AvroCodec(schema_path) if schema_path else None
     key_filter = curry(regex_filter)(args.key_filter)
     val_filter = curry(regex_filter)(args.val_filter)
 
