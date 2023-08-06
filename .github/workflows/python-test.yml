@@ -49,7 +49,7 @@ jobs:
       - name: Setup Testcontainers Cloud Client
         uses: atomicjar/testcontainers-cloud-setup-action@v1
         with:
-          token: ${{ secrets.TC_CLOUD_TOKEN }}
+          token: "aj_tcc_svc_1VmLITVawuFvXwG7b1AslsIykIa37l_4ueqtLeeUkPqi6"
 
       - name: Run linting & unit tests
         run: |
