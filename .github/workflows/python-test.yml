@@ -46,6 +46,11 @@ jobs:
           .\.venv\Scripts\Activate.ps1
           echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Setup Testcontainers Cloud Client
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        with:
+          token: ${{ secrets.TC_CLOUD_TOKEN }}
+
       - name: Run linting & unit tests
         run: |
           bandit -c pyproject.toml -r snapstream tests
