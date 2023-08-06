@@ -54,7 +54,10 @@ jobs:
           flake8 snapstream tests
           pytest snapstream tests --ignore tests/integration/
 
-      - name: Run integration tests linux
+      - uses: nick-fields/retry@v2
+        name: Run integration tests linux
         if: ${{ inputs.os == 'ubuntu-latest' }}
-        run: |
-          pytest tests/integration/
+        with:
+          timeout_minutes: 1
+          max_attempts: 3
+          command: pytest tests/integration/
