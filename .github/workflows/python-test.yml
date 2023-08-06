@@ -49,7 +49,8 @@ jobs:
       - name: Setup Testcontainers Cloud Client
         uses: atomicjar/testcontainers-cloud-setup-action@v1
         with:
-          token: "aj_tcc_svc_1VmLITVawuFvXwG7b1AslsIykIa37l_4ueqtLeeUkPqi6"
+          token: ${{ secrets.TC_CLOUD_TOKEN }}
+          wait: true
 
       - name: Run linting & unit tests
         run: |
@@ -58,6 +59,11 @@ jobs:
           pyright snapstream tests
           flake8 snapstream tests
           pytest snapstream tests --ignore tests/integration/
+
+      - name: Terminate Testcontainers Cloud Client active sessions
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        with:
+          action: terminate
 
       - name: Run integration tests linux
         if: ${{ inputs.os == 'ubuntu-latest' }}
