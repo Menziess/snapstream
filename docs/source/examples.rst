@@ -11,6 +11,7 @@ Topic
 Topic can be used to send and receive kafka messages.
 
 - Data is sent to kafka when ``topic`` is called as a function
+- Messages can be consumed by iterating over the ``topic`` object
 
 ::
 
@@ -29,7 +30,6 @@ Topic can be used to send and receive kafka messages.
   for msg in topic:
       print(msg.key(), msg.value().decode())
 
-- Messages are consumed when ``topic`` is iterated over
 
 ::
 
@@ -44,6 +44,7 @@ Cache
 Cache can be used to persist data.
 
 - Data is cached when ``cache`` is called as a function
+- Data is stored in sst files in the specified folder: ``db``
 
 ::
 
@@ -52,22 +53,22 @@ Cache can be used to persist data.
   cache = Cache('db')
 
   cache('prize', '🏆')
-
-- Data is stored in sst files in the provided folder: ``db``
-
-::
-
   cache['phone'] = '📞'
 
   for x, y in cache.items():
       print(x, y)
 
-- Cache is also subscriptable
-
 ::
 
   phone 📞
   prize 🏆
+
+To avoid race conditions, lock database keys using the ``transaction`` context manager:
+
+::
+
+  with cache.transaction('fish'):
+      cache['fish'] = '🐟'
 
 Cache is a basic wrapper around `rocksdict <https://congyuwang.github.io/RocksDict/rocksdict.html>`_.
 
@@ -76,7 +77,8 @@ Conf
 
 Conf can be used to set default kafka configurations.
 
-- Conf is a Singleton class, there can only be a single instance
+- Conf is a Singleton class, only one instance exists
+- Configurations can be overridden per topic
 
 ::
 
@@ -100,8 +102,6 @@ Conf can be used to set default kafka configurations.
 
   print(topic1.conf)
   print(topic2.conf)
-
-- Default configurations can be overridden per topic
 
 ::
 
@@ -138,6 +138,8 @@ Timer
 
 If there's no incoming data, generators can be used to trigger handler functions.
 
+- The ``timer()`` function returns a generator that yields ``None`` every 1.0 seconds
+
 ::
 
   from time import localtime, sleep, strftime
@@ -155,8 +157,6 @@ If there's no incoming data, generators can be used to trigger handler functions
 
   stream()
 
-- The ``timer()`` function returns a generator that yields ``None`` every 1.0 seconds
-
 ::
 
   23:25:10
@@ -169,7 +169,7 @@ Codec
 
 Codecs are used for serializing and deserializing data.
 
-- Data that's passed to ``topic`` is automatically json serialized
+- Using ``JsonCodec`` values are automatically converted to and from json
 
 ::
 
@@ -187,8 +187,6 @@ Codecs are used for serializing and deserializing data.
 
   for msg in topic:
       print(msg.value())
-
-- Data that's read from ``topic`` is automatically deserialized
 
 ::
 
