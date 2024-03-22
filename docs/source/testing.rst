@@ -72,14 +72,20 @@ It uses:
       def value(self):
           return self.return_value
 
+      def timestamp(self):
+          return (1, dt.now().timestamp() * 1000)
+
 
   class FakeCache(defaultdict):
 
-    def __init__(self, contents={}):
-        return super().__init__(lambda: None, contents)
+      def __init__(self, contents={}):
+          return super().__init__(lambda: None, contents)
 
-    def values(self, *args, **kwargs):
-        return super().values()
+      def __call__(self, key, val, *args) -> None:
+          self.__setitem__(key, val)
+
+      def values(self, *args, **kwargs):
+          return [_ for _ in super().values() if _]
 
 
   def test_produce(mocker):

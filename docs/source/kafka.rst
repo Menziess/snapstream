@@ -41,7 +41,7 @@ Here's the hello-world application using Kafka:
 
   stream()
 
-Some basic principles to remember:
+The principles remain the same:
 
 - Any `iterable <https://pythonbasics.org/iterable/>`_ may act as a source of data
 - Any callable can be used as a sink

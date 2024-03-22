@@ -10,6 +10,8 @@ from avro.io import BinaryDecoder, BinaryEncoder, DatumReader, DatumWriter
 from avro.schema import Schema, parse
 from toolz import curry
 
+from snapstream.utils import with_type_hint
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,6 +26,7 @@ def serialize_json(msg: dict) -> bytes:
     return dumped.encode()
 
 
+@with_type_hint
 @curry
 def deserialize_avro(schema: Schema, msg: bytes) -> object:
     """Deserialize avro message using provided schema."""
@@ -37,6 +40,7 @@ def deserialize_avro(schema: Schema, msg: bytes) -> object:
         raise
 
 
+@with_type_hint
 @curry
 def serialize_avro(schema: Schema, msg: dict) -> bytes:
     """Serialize avro message using provided schema."""

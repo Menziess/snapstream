@@ -170,7 +170,7 @@ def inspect_topic(entry: dict, args: Namespace):
         key = msg.key().decode() if msg.key() is not None else ''
         offset = msg.offset()
         val = msg.value()
-        if key_filter(str(key)) and val_filter(str(val)):  # pyright: ignore
+        if key_filter(str(key)) and val_filter(str(val)):
             print()
             if timestamp and timestamp < start_time:
                 print('>>> timestamp:', timestamp_str, '(catching up)')
@@ -194,7 +194,7 @@ def inspect_cache(entry: dict, args: Namespace):
     key_filter = curry(regex_filter)(args.key_filter)
     val_filter = curry(regex_filter)(args.val_filter)
     for key, val in cache.items():
-        if key_filter(str(key)) and val_filter(str(val)):  # pyright: ignore
+        if key_filter(str(key)) and val_filter(str(val)):
             if args.columns and not isinstance(val, dict):
                 raise ValueError(f'Columns could not be extracted from {type(val)}: {val}')
             print()
