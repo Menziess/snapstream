@@ -62,7 +62,7 @@ def snap(
     c = Conf()
 
     def _deco(f):
-        def _handler(msg, kwargs):
+        def _handler(msg, kwargs={}):
             parameters = signature(f).parameters.values()
             if any(p.kind == p.VAR_KEYWORD for p in parameters):
                 output = f(msg, **kwargs)
