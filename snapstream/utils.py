@@ -116,6 +116,7 @@ class KafkaIgnoredPropertyFilter(logging.Filter):
 
 
 def with_type_hint(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Retain function types after applying decorators."""
     def decorator(curried_func: Callable[..., Any]) -> Callable[..., Any]:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             return curried_func(*args, **kwargs)
