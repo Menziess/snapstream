@@ -1,9 +1,15 @@
-from avro.schema import parse
 import pytest
+from avro.schema import parse
 
-from snapstream.codecs import (AvroCodec, ICodec, JsonCodec, deserialize_avro,
-                               deserialize_json, serialize_avro,
-                               serialize_json)
+from snapstream.codecs import (
+    AvroCodec,
+    ICodec,
+    JsonCodec,
+    deserialize_avro,
+    deserialize_json,
+    serialize_avro,
+    serialize_json,
+)
 
 
 def test_deserialize_json(raw_msg, json_msg):

@@ -6,8 +6,16 @@ from contextlib import contextmanager
 from queue import Queue
 from re import sub
 from threading import Thread, current_thread
-from typing import (Any, Callable, Dict, Iterable, Iterator, Optional, Set,
-                    Tuple)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Set,
+    Tuple,
+)
 
 from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
