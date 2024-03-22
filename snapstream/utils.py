@@ -4,7 +4,7 @@ import logging
 from os import environ, getenv, listdir
 from pathlib import Path
 from re import match, sub
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from toolz.curried import compose, curry, last
 
@@ -113,3 +113,11 @@ class KafkaIgnoredPropertyFilter(logging.Filter):
             and
             'property and will be ignored' in record.getMessage()
         )
+
+
+def with_type_hint(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(curried_func: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return curried_func(*args, **kwargs)
+        return wrapper
+    return decorator(func)
