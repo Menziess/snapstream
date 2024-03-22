@@ -40,29 +40,29 @@ def test_iterability(cache):
 
 def test_transaction(cache):
     """Test transaction."""
-    result = []
+    key, result = '123', []
 
     def try_access_locked_cache():
-        result.append(cache['123'])
-        cache['123'] = 'b'
-        result.append(cache['123'])
+        result.append(cache[key])
+        cache[key] = 'b'
+        result.append(cache[key])
 
     t = Thread(target=try_access_locked_cache)
 
-    with cache.transaction():
-        cache['123'] = 'a'
+    with cache.transaction(key):
+        cache[key] = 'a'
 
-        # Within the transaction, we read and alter cache['123'] and
-        # add its value to the result list, mutation shouldn't work
+        # Within the transaction, we read and alter cache[key] and add
+        # its value to the result list, alterations shouldn't work
         t.start()
         t.join(timeout=0.01)
         if t.is_alive():
             result.append("Timeout")
 
         assert result == ['a', 'Timeout']
-        assert cache['123'] == 'a'
+        assert cache[key] == 'a'
 
     # The thread is still running here, so outside of the
     # transaction it will eventually succeed to add 'b'
     sleep(0.01)
-    assert cache['123'] == 'b'
+    assert cache[key] == 'b'
