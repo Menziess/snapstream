@@ -1,12 +1,25 @@
 """Snapstream caching."""
 
 import os
+from contextlib import contextmanager
+from threading import RLock
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from rocksdict import (AccessType, ColumnFamily, CompactOptions,
-                       DBCompactionStyle, DBCompressionType,
-                       FifoCompactOptions, IngestExternalFileOptions, Options,
-                       Rdict, RdictIter, ReadOptions, Snapshot, WriteOptions)
+from rocksdict import (
+    AccessType,
+    ColumnFamily,
+    CompactOptions,
+    DBCompactionStyle,
+    DBCompressionType,
+    FifoCompactOptions,
+    IngestExternalFileOptions,
+    Options,
+    Rdict,
+    RdictIter,
+    ReadOptions,
+    Snapshot,
+    WriteOptions,
+)
 from rocksdict.rocksdict import RdictItems, RdictKeys, RdictValues
 
 MB, MINUTES = 1024 * 1024, 60
@@ -40,6 +53,7 @@ class Cache:
         https://congyuwang.github.io/RocksDict/rocksdict.html
         """
         self.name = path
+        self.lock = RLock()
         options = options or self._default_options(target_table_size)
         column_families = column_families or {
             key: options
@@ -94,7 +108,8 @@ class Cache:
 
     def __setitem__(self, key, val) -> None:
         """Set item in db."""
-        self.db[key] = val
+        with self.lock:
+            self.db[key] = val
 
     def __enter__(self) -> 'Cache':
         """Contextmanager."""
@@ -120,6 +135,12 @@ class Cache:
         """Set custom write options."""
         return self.db.set_write_options(write_opt)
 
+    @contextmanager
+    def transaction(self) -> Any:
+        """Lock the database while using the context manager."""
+        with self.lock:
+            yield self
+
     def get(
         self,
         key: Union[str, int, float, bytes, bool, List[str], List[int], List[float], List[bytes], List[bool]],
@@ -136,7 +157,8 @@ class Cache:
         write_opt: Union[WriteOptions, None] = None
     ) -> None:
         """Put item in database using key."""
-        return self.db.put(key, value, write_opt)
+        with self.lock:
+            return self.db.put(key, value, write_opt)
 
     def delete(
         self,
