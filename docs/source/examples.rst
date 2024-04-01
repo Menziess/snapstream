@@ -271,3 +271,45 @@ In the following snippet, we also pass a step of ``2``, taking every second mess
   ...
 
 You'll also notice that the program keeps waiting until the stop condition has been met.
+
+Endpoint
+--------
+
+To share streaming data using API endpoints, install ``uvicorn`` and ``fastapi``, then use ``Thread`` to start the server.
+
+In this example ``dictquery`` is used to query the cache:
+
+::
+
+  from threading import Thread
+  from time import sleep
+
+  import dictquery as dq
+  from fastapi import FastAPI
+  from snapstream import Cache, snap, stream
+  from uvicorn import run
+
+  app, cache = FastAPI(), Cache('db')
+
+  @snap(range(1000), sink=[cache])
+  def add_unicode_to_cache(key):
+      yield key, {'number': key, 'unicode': chr(key)}
+      sleep(5)
+
+  @app.get('/query/{query}')
+  async def query_cache(query: str):
+      return list(dq.filter(cache.values(), query))
+
+  if __name__ == '__main__':
+      Thread(target=run, args=(app,), daemon=True).start()
+      stream()
+
+When we call the following url ``http://127.0.0.1:8000/query/number >= 2`` it will return the entries that are available:
+
+::
+
+  [
+    {"number": 2, "unicode": "\u0002"},
+    {"number": 3, "unicode": "\u0003"},
+    ...
+  ]

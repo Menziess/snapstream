@@ -72,16 +72,13 @@ Fields can be filtered when a dictionary is returned:
   >>> key: 123
   {'value': 'A story about jack and james.'}
 
-To get some additional RocksDB statistics on the cache, pass the ``--stats`` flag:
+To see the live files of the cache and the total size, pass the ``--stats`` flag:
 
 ::
 
   snapstream cache db --stats
 
 ::
-
-  >>> key: 123
-  {'timestamp': 123, 'value': 'A story about jack and james.'}
 
   Statistics:
   [
