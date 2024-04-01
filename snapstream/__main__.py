@@ -191,6 +191,12 @@ def inspect_cache(entry: dict, args: Namespace):
         args.path,
         access_type=AccessType.read_only(),
     )
+    if args.stats:
+        print()
+        print('Statistics:')
+        print(dumps(cache.live_files(), indent=4))
+        print('Folder size:', folder_size(args.path + '/**/*', 'mb'), 'mb')
+        return
     key_filter = curry(regex_filter)(args.key_filter)
     val_filter = curry(regex_filter)(args.val_filter)
     for key, val in cache.items():
@@ -202,12 +208,6 @@ def inspect_cache(entry: dict, args: Namespace):
             print(val) if not args.columns else print({
                 k: v for k, v in val.items() if k in args.columns.split(',')
             })
-
-    if args.stats:
-        print()
-        print('Statistics:')
-        print(dumps(cache.live_files(), indent=4))
-        print('Folder size:', folder_size(args.path + '/**/*', 'mb'), 'mb')
 
 
 def main():
