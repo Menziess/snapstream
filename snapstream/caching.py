@@ -152,7 +152,7 @@ class Cache:
 
     def get(
         self,
-        key: Union[str, int, float, bytes, bool, List[str], List[int], List[float], List[bytes], List[bool]],
+        key: Union[str, int, float, bytes, bool, List[Union[str, int, float, bytes, bool]]],
         default: Any = None,
         read_opt: Union[ReadOptions, None] = None
     ) -> Optional[Any]:
