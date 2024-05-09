@@ -358,7 +358,8 @@ class Topic(ITopic):
 
     def __next__(self) -> Any:
         """Consume next message from topic."""
-        self._consumer_ctx = self._consumer_ctx or self.__iter__()
+        if not self._consumer_ctx:
+            self._consumer_ctx = self.__iter__()
         return next(self._consumer_ctx)
 
     def __getitem__(self, i) -> Any:
