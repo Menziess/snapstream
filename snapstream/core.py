@@ -15,6 +15,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    cast,
 )
 
 from confluent_kafka import Consumer, Producer
@@ -289,8 +290,9 @@ class Topic(ITopic):
         self.starting_offset = offset
         self.flush_timeout = flush_timeout
         self.poll_timeout = poll_timeout
-        self.consumer = None
-        self.producer = None
+        self._consumer = None
+        self._producer = None
+        self._consumer_ctx = None
         self._producer_ctx = None
         self.pusher = pusher
         self.poller = poller
@@ -317,18 +319,47 @@ class Topic(ITopic):
                     logger.error(e)
                     raise
 
+    @contextmanager
+    def _get_consumer(self) -> Iterator[Iterable[Any]]:
+        """Yield an iterable to consume from kafka."""
+        self._consumer = self._consumer or Consumer(self.conf, logger=logger)
+
+        def consume():
+            def on_assign(c, ps):
+                for p in ps:
+                    if self.starting_offset is not None:
+                        p.offset = self.starting_offset
+                c.assign(ps)
+
+            logger.debug(f'Subscribing to topic: {self.name}.')
+            cast(Consumer, self._consumer).subscribe([self.name], on_assign=on_assign)
+            logger.debug(f'Consuming from topic: {self.name}.')
+            yield from self.poller(self._consumer, self.conf, self.poll_timeout, self.codec,
+                                   self.raise_error, self.commit_each_message)
+        try:
+            yield consume()
+        finally:
+            self._consumer.close()
+
+    @contextmanager
+    def _get_producer(self) -> Iterator[Callable[[Any, Any], None]]:
+        """Yield kafka produce method."""
+        self._producer = self._producer or Producer(self.conf, logger=logger)
+        yield self.pusher(self._producer, self.name, self.poll_timeout, self.codec, self.dry)
+        logger.debug(f'Flushing messages to kafka, flush_timeout={self.flush_timeout}.')
+        self._producer.flush(self.flush_timeout)
+
     def __iter__(self) -> Iterator[Any]:
         """Consume from topic."""
-        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec, self.poll_timeout,
-                         self.poller, self.raise_error, self.commit_each_message)
+        c = self._get_consumer()
         with c as consumer:
             for msg in consumer:
                 yield msg
 
     def __next__(self) -> Any:
         """Consume next message from topic."""
-        self.consumer = self.consumer or self.__iter__()
-        return next(self.consumer)
+        self._consumer_ctx = self._consumer_ctx or self.__iter__()
+        return next(self._consumer_ctx)
 
     def __getitem__(self, i) -> Any:
         """Consume specific range of messages from topic."""
@@ -343,8 +374,7 @@ class Topic(ITopic):
             i.step,
             i.stop
         )
-        c = get_consumer(self.name, self.conf, start, self.codec, self.poll_timeout,
-                         self.poller, self.raise_error, self.commit_each_message)
+        c = self._get_consumer()
         with c as consumer:
             for msg in consumer:
                 if stop and msg.offset() >= stop:
@@ -355,16 +385,9 @@ class Topic(ITopic):
 
     def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
-        self._producer_ctx = (
-            self._producer_ctx
-            or get_producer(self.name, self.conf, self.dry, self.codec,
-                            self.poll_timeout, self.flush_timeout, self.pusher)
-        )
-        self.producer = (
-            self.producer or
-            self._producer_ctx.__enter__()
-        )
-        self.producer(key, val, *args, **kwargs)
+        if not self._producer_ctx:
+            self._producer_ctx = self._get_producer().__enter__()
+        self._producer_ctx(key, val, *args, **kwargs)
 
     def __del__(self):
         """Exit potential producer instance."""
