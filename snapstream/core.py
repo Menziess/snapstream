@@ -152,7 +152,7 @@ class ITopic(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-def _consumer_handler(c, conf, poll_timeout, codec, raise_error):
+def _consumer_handler(c, conf, poll_timeout, codec, raise_error, commit_each_message):
     manual_commit = pipe(
         conf.get('enable.auto.commit'),
         str,
@@ -175,7 +175,7 @@ def _consumer_handler(c, conf, poll_timeout, codec, raise_error):
 
         yield msg
 
-        if manual_commit:
+        if manual_commit and commit_each_message:
             c.commit()
 
 
@@ -187,7 +187,8 @@ def get_consumer(
     codec: Optional[ICodec] = None,
     poll_timeout: float = 1.0,
     poller=_consumer_handler,
-    raise_error=False
+    raise_error=False,
+    commit_each_message=False
 ) -> Iterator[Iterable[Any]]:
     """Yield an iterable to consume from kafka."""
     c = Consumer(conf, logger=logger)
@@ -202,7 +203,7 @@ def get_consumer(
         logger.debug(f'Subscribing to topic: {topic}.')
         c.subscribe([topic], on_assign=on_assign)
         logger.debug(f'Consuming from topic: {topic}.')
-        yield from poller(c, conf, poll_timeout, codec, raise_error)
+        yield from poller(c, conf, poll_timeout, codec, raise_error, commit_each_message)
 
     try:
         yield consume()
@@ -278,7 +279,8 @@ class Topic(ITopic):
         pusher=_producer_handler,
         poller=_consumer_handler,
         dry: bool = False,
-        raise_error: bool = False
+        raise_error: bool = False,
+        commit_each_message: bool = False
     ) -> None:
         """Pass topic related configuration."""
         c = Conf()
@@ -295,6 +297,7 @@ class Topic(ITopic):
         self.codec = codec
         self.dry = dry
         self.raise_error = raise_error
+        self.commit_each_message = commit_each_message
 
     def admin(self):
         """Get admin client."""
@@ -316,8 +319,8 @@ class Topic(ITopic):
 
     def __iter__(self) -> Iterator[Any]:
         """Consume from topic."""
-        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec,
-                         self.poll_timeout, self.poller, self.raise_error)
+        c = get_consumer(self.name, self.conf, self.starting_offset, self.codec, self.poll_timeout,
+                         self.poller, self.raise_error, self.commit_each_message)
         with c as consumer:
             for msg in consumer:
                 yield msg
@@ -340,8 +343,8 @@ class Topic(ITopic):
             i.step,
             i.stop
         )
-        c = get_consumer(self.name, self.conf, start, self.codec,
-                         self.poll_timeout, self.poller, self.raise_error)
+        c = get_consumer(self.name, self.conf, start, self.codec, self.poll_timeout,
+                         self.poller, self.raise_error, self.commit_each_message)
         with c as consumer:
             for msg in consumer:
                 if stop and msg.offset() >= stop:
