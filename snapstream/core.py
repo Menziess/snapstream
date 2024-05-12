@@ -230,23 +230,6 @@ def _producer_handler(p, topic, poll_timeout, codec, dry):
     return produce
 
 
-@contextmanager
-def get_producer(
-    topic: str,
-    conf: dict,
-    dry=False,
-    codec: Optional[ICodec] = None,
-    poll_timeout: float = 1.0,
-    flush_timeout: float = -1.0,
-    pusher=_producer_handler
-) -> Iterator[Callable[[Any, Any], None]]:
-    """Yield kafka produce method."""
-    p = Producer(conf, logger=logger)
-    yield pusher(p, topic, poll_timeout, codec, dry)
-    logger.debug(f'Flushing messages to kafka, flush_timeout={flush_timeout}.')
-    p.flush(flush_timeout)
-
-
 class Topic(ITopic):
     """Act as a consumer and producer.
 
@@ -290,7 +273,8 @@ class Topic(ITopic):
         self._consumer = None
         self._producer = None
         self._consumer_ctx = None
-        self._producer_ctx = None
+        self._producer_callable = None
+        self._producer_ctx_mgr = None
         self.pusher = pusher
         self.poller = poller
         self.codec = codec
@@ -383,11 +367,12 @@ class Topic(ITopic):
 
     def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
-        if not self._producer_ctx:
-            self._producer_ctx = self._get_producer().__enter__()
-        self._producer_ctx(key, val, *args, **kwargs)
+        if not self._producer_callable:
+            self._producer_ctx_mgr = self._get_producer()
+            self._producer_callable = self._producer_ctx_mgr.__enter__()
+        self._producer_callable(key, val, *args, **kwargs)
 
     def __del__(self):
         """Exit potential producer instance."""
-        if self._producer_ctx:
-            self._producer_ctx.__exit__(None, None, None)
+        if self._producer_ctx_mgr:
+            self._producer_ctx_mgr.__exit__(None, None, None)
