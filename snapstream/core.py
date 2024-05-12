@@ -9,9 +9,12 @@ from threading import Thread, current_thread
 from typing import (
     Any,
     Callable,
+    Dict,
     Iterable,
     Iterator,
     Optional,
+    Set,
+    Tuple,
     cast,
 )
 
@@ -38,7 +41,7 @@ class Conf(metaclass=Singleton):
     {'bootstrap.servers': 'localhost:29091'}
     """
 
-    iterables: set[tuple[str, Iterable]] = set()
+    iterables: Set[Tuple[str, Iterable]] = set()
 
     def register_iterables(self, *it):
         """Add iterables to global Conf."""
@@ -84,7 +87,7 @@ class Conf(metaclass=Singleton):
 
     def __init__(self, conf: dict = {}) -> None:
         """Define init behavior."""
-        self.conf: dict[str, Any] = {}
+        self.conf: Dict[str, Any] = {}
         self.__update__(conf)
 
     def __update__(self, conf: dict = {}):
@@ -106,10 +109,10 @@ class ITopic(metaclass=ABCMeta):
     def __init__(
         self,
         name: str,
-        conf: dict[str, Any] = {},
+        conf: Dict[str, Any] = {},
         offset: Optional[int] = None,
         codec: Optional[ICodec] = None,
-        **kwargs: dict[str, Any]
+        **kwargs: Dict[str, Any]
     ) -> None:
         """Initialize topic instance.
 
@@ -118,7 +121,7 @@ class ITopic(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def create_topic(self, name: str, *args: Any, **kwargs: dict[str, Any]) -> None:
+    def create_topic(self, name: str, *args: Any, **kwargs: Dict[str, Any]) -> None:
         """Create topic.
 
         - Should allow `*args`, `**kwargs` passthrough to kafka client.
@@ -137,7 +140,7 @@ class ITopic(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def __call__(self, val, key=None, * args, dry: bool = False, **kwargs: dict[str, Any]) -> None:
+    def __call__(self, val, key=None, * args, dry: bool = False, **kwargs: Dict[str, Any]) -> None:
         """Produce to topic.
 
         - Should instantiate producer when first called (function call).
