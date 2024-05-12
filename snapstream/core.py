@@ -150,13 +150,7 @@ class ITopic(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-def _consumer_handler(c, conf, poll_timeout, codec, raise_error, commit_each_message):
-    manual_commit = pipe(
-        conf.get('enable.auto.commit'),
-        str,
-        str.lower
-    ) == 'false'
-
+def _consumer_handler(c, poll_timeout, codec, raise_error, commit_each_message):
     while True:
         msg = c.poll(poll_timeout)
         if msg is None:
@@ -173,40 +167,8 @@ def _consumer_handler(c, conf, poll_timeout, codec, raise_error, commit_each_mes
 
         yield msg
 
-        if manual_commit and commit_each_message:
+        if commit_each_message:
             c.commit()
-
-
-@contextmanager
-def get_consumer(
-    topic: str,
-    conf: dict,
-    offset=None,
-    codec: Optional[ICodec] = None,
-    poll_timeout: float = 1.0,
-    poller=_consumer_handler,
-    raise_error=False,
-    commit_each_message=False
-) -> Iterator[Iterable[Any]]:
-    """Yield an iterable to consume from kafka."""
-    c = Consumer(conf, logger=logger)
-
-    def consume():
-        def on_assign(c, ps):
-            for p in ps:
-                if offset is not None:
-                    p.offset = offset
-            c.assign(ps)
-
-        logger.debug(f'Subscribing to topic: {topic}.')
-        c.subscribe([topic], on_assign=on_assign)
-        logger.debug(f'Consuming from topic: {topic}.')
-        yield from poller(c, conf, poll_timeout, codec, raise_error, commit_each_message)
-
-    try:
-        yield consume()
-    finally:
-        c.close()
 
 
 def _producer_handler(p, topic, poll_timeout, codec, dry):
@@ -272,7 +234,6 @@ class Topic(ITopic):
         self.poll_timeout = poll_timeout
         self._consumer = None
         self._producer = None
-        self._consumer_ctx = None
         self._producer_callable = None
         self._producer_ctx_mgr = None
         self.pusher = pusher
@@ -303,7 +264,12 @@ class Topic(ITopic):
     @contextmanager
     def _get_consumer(self) -> Iterator[Iterable[Any]]:
         """Yield an iterable to consume from kafka."""
-        self._consumer = self._consumer or Consumer(self.conf, logger=logger)
+        self._consumer = Consumer(self.conf, logger=logger)
+        commit_each_message = pipe(
+            self.conf.get('enable.auto.commit'),
+            str,
+            str.lower
+        ) == 'false' and self.commit_each_message
 
         def consume():
             def on_assign(c, ps):
@@ -315,12 +281,16 @@ class Topic(ITopic):
             logger.debug(f'Subscribing to topic: {self.name}.')
             cast(Consumer, self._consumer).subscribe([self.name], on_assign=on_assign)
             logger.debug(f'Consuming from topic: {self.name}.')
-            yield from self.poller(self._consumer, self.conf, self.poll_timeout, self.codec,
-                                   self.raise_error, self.commit_each_message)
-        try:
-            yield consume()
-        finally:
-            self._consumer.close()
+            yield from self.poller(self._consumer, self.poll_timeout, self.codec,
+                                   self.raise_error, commit_each_message)
+        yield consume()
+        leave_msg = (
+            'Leaving group'
+            if commit_each_message
+            else 'Committing offsets and leaving group'
+        )
+        logger.debug(f'{leave_msg}, flush_timeout={self.flush_timeout}.')
+        self._consumer.close()
 
     @contextmanager
     def _get_producer(self) -> Iterator[Callable[[Any, Any], None]]:
@@ -339,9 +309,10 @@ class Topic(ITopic):
 
     def __next__(self) -> Any:
         """Consume next message from topic."""
-        if not self._consumer_ctx:
-            self._consumer_ctx = self.__iter__()
-        return next(self._consumer_ctx)
+        c = self._get_consumer()
+        with c as consumer:
+            for msg in consumer:
+                return msg
 
     def __getitem__(self, i) -> Any:
         """Consume specific range of messages from topic."""
@@ -359,6 +330,8 @@ class Topic(ITopic):
         c = self._get_consumer()
         with c as consumer:
             for msg in consumer:
+                if start and start > msg.offset():
+                    continue
                 if stop and msg.offset() >= stop:
                     return
                 if step and (msg.offset() - max(0, start)) % step != 0:
@@ -373,6 +346,6 @@ class Topic(ITopic):
         self._producer_callable(key, val, *args, **kwargs)
 
     def __del__(self):
-        """Exit potential producer instance."""
+        """Cleanup and finalization."""
         if self._producer_ctx_mgr:
             self._producer_ctx_mgr.__exit__(None, None, None)
