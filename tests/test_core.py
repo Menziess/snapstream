@@ -5,7 +5,7 @@ from confluent_kafka.admin import NewTopic
 from pubsub import pub
 
 from snapstream import Conf
-from snapstream.core import ITopic, Topic, get_consumer, get_producer
+from snapstream.core import ITopic, Topic
 
 
 def test_Conf(mocker):
@@ -44,13 +44,15 @@ def test_ITopic():
 
 def test_get_consumer():
     """Should return an interable."""
-    with get_consumer('test', {'group.id': 'test'}, poll_timeout=0) as c:
+    t = Topic('test', {'group.id': 'test'}, poll_timeout=0)
+    with t._get_consumer() as c:
         assert isinstance(c, Iterable)
 
 
 def test_get_producer(mocker):
     """Should return a callable."""
-    with get_producer('test', {}, flush_timeout=0) as p:
+    t = Topic('test', {}, flush_timeout=0)
+    with t._get_producer() as p:
         assert isinstance(p, Callable)
         p('test', 'test')
 

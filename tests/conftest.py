@@ -11,7 +11,7 @@ from testcontainers.kafka import KafkaContainer
 
 from snapstream import Cache
 
-KAFKA_CONTAINER = 'confluentinc/cp-kafka:7.4.0'
+KAFKA_CONTAINER = 'confluentinc/cp-kafka:7.6.1'
 
 _avro_schema = parse(dumps({
     'type': 'record',
