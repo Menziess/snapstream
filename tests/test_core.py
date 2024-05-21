@@ -42,17 +42,17 @@ def test_ITopic():
         MyFailingTopic()  # type: ignore
 
 
-def test_get_consumer():
+def test_get_iterable():
     """Should return an interable."""
     t = Topic('test', {'group.id': 'test'}, poll_timeout=0)
-    with t._get_consumer() as c:
+    with t._get_iterable() as c:
         assert isinstance(c, Iterable)
 
 
-def test_get_producer(mocker):
+def test_get_callable(mocker):
     """Should return a callable."""
     t = Topic('test', {}, flush_timeout=0)
-    with t._get_producer() as p:
+    with t._get_callable() as p:
         assert isinstance(p, Callable)
         p('test', 'test')
 

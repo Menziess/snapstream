@@ -264,17 +264,12 @@ class Topic(ITopic):
                     logger.error(e)
                     raise
 
-    @contextmanager
-    def _get_consumer(self) -> Iterator[Iterable[Any]]:
-        """Yield an iterable to consume from kafka."""
-        self._consumer = Consumer(self.conf, logger=logger)
-        commit_each_message = pipe(
-            self.conf.get('enable.auto.commit'),
-            str,
-            str.lower
-        ) == 'false' and self.commit_each_message
+    @property
+    def consumer(self) -> Optional[Consumer]:
+        """Get underlying consumer object."""
+        if not self._consumer:
+            self._consumer = Consumer(self.conf, logger=logger)
 
-        def consume():
             def on_assign(c, ps):
                 for p in ps:
                     if self.starting_offset is not None:
@@ -282,9 +277,37 @@ class Topic(ITopic):
                 c.assign(ps)
 
             logger.debug(f'Subscribing to topic: {self.name}.')
-            cast(Consumer, self._consumer).subscribe([self.name], on_assign=on_assign)
+            self._consumer.subscribe([self.name], on_assign=on_assign)
+
+        return self._consumer
+
+    @consumer.deleter
+    def consumer(self):
+        self._consumer = None
+
+    @property
+    def producer(self) -> Producer:
+        """Get underlying producer object."""
+        if not self._producer:
+            self._producer = Producer(self.conf, logger=logger)
+        return self._producer
+
+    @producer.deleter
+    def producer(self):
+        self._producer = None
+
+    @contextmanager
+    def _get_iterable(self) -> Iterator[Iterable[Any]]:
+        """Yield an iterable to consume from kafka."""
+        commit_each_message = pipe(
+            self.conf.get('enable.auto.commit'),
+            str,
+            str.lower
+        ) == 'false' and self.commit_each_message
+
+        def consume():
             logger.debug(f'Consuming from topic: {self.name}.')
-            yield from self.poller(self._consumer, self.poll_timeout, self.codec,
+            yield from self.poller(self.consumer, self.poll_timeout, self.codec,
                                    self.raise_error, commit_each_message)
         yield consume()
         leave_msg = (
@@ -293,26 +316,28 @@ class Topic(ITopic):
             else 'Committing offsets and leaving group'
         )
         logger.debug(f'{leave_msg}, flush_timeout={self.flush_timeout}.')
-        self._consumer.close()
+        if self._consumer:
+            cast(Consumer, self.consumer).close()
+            del self.consumer
 
     @contextmanager
-    def _get_producer(self) -> Iterator[Callable[[Any, Any], None]]:
+    def _get_callable(self) -> Iterator[Callable[[Any, Any], None]]:
         """Yield kafka produce method."""
-        self._producer = self._producer or Producer(self.conf, logger=logger)
-        yield self.pusher(self._producer, self.name, self.poll_timeout, self.codec, self.dry)
+        yield self.pusher(self.producer, self.name, self.poll_timeout, self.codec, self.dry)
         logger.debug(f'Flushing messages to kafka, flush_timeout={self.flush_timeout}.')
-        self._producer.flush(self.flush_timeout)
+        if self._producer:
+            self.producer.flush(self.flush_timeout)
 
     def __iter__(self) -> Iterator[Any]:
         """Consume from topic."""
-        c = self._get_consumer()
+        c = self._get_iterable()
         with c as consumer:
             for msg in consumer:
                 yield msg
 
     def __next__(self) -> Any:
         """Consume next message from topic."""
-        c = self._get_consumer()
+        c = self._get_iterable()
         with c as consumer:
             for msg in consumer:
                 return msg
@@ -330,21 +355,23 @@ class Topic(ITopic):
             i.step,
             i.stop
         )
-        c = self._get_consumer()
+        c = self._get_iterable()
         with c as consumer:
             for msg in consumer:
                 if start and start > msg.offset():
                     continue
-                if stop and msg.offset() >= stop:
+                if stop and msg.offset() > stop:
                     return
-                if step and (msg.offset() - max(0, start)) % step != 0:
+                if step and (msg.offset() - max(0, start or 0)) % step != 0:
                     continue
                 yield msg
+                if stop and msg.offset() >= stop:
+                    return
 
     def __call__(self, val, key=None, *args, **kwargs) -> None:
         """Produce to topic."""
         if not self._producer_callable:
-            self._producer_ctx_mgr = self._get_producer()
+            self._producer_ctx_mgr = self._get_callable()
             self._producer_callable = self._producer_ctx_mgr.__enter__()
         self._producer_callable(key, val, *args, **kwargs)
 
