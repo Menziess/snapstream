@@ -17,7 +17,7 @@ from toolz import compose, curry, identity
 
 from snapstream import READ_FROM_END, Cache, Topic
 from snapstream.codecs import AvroCodec
-from snapstream.utils import folder_size, get_variable
+from snapstream.utils import folder_size, get_variable, with_type_hint
 
 DEFAULT_CONFIG_PATH = '~/'
 CONFIG_FILENAME = '.snapstreamcfg'
@@ -155,8 +155,8 @@ def inspect_topic(entry: dict, args: Namespace):
     start_time = dt.now(tz=timezone.utc)
     schema_path = args.schema or entry.get('schema_path')
     schema = AvroCodec(schema_path) if schema_path else None
-    key_filter = curry(regex_filter)(args.key_filter)
-    val_filter = curry(regex_filter)(args.val_filter)
+    key_filter = with_type_hint(curry(regex_filter))(args.key_filter)
+    val_filter = with_type_hint(curry(regex_filter))(args.val_filter)
 
     for msg in Topic(args.name, conf, args.offset, schema):
         if msg.timestamp():
@@ -197,8 +197,8 @@ def inspect_cache(entry: dict, args: Namespace):
         print(dumps(cache.live_files(), indent=4))
         print('Folder size:', folder_size(args.path + '/**/*', 'mb'), 'mb')
         return
-    key_filter = curry(regex_filter)(args.key_filter)
-    val_filter = curry(regex_filter)(args.val_filter)
+    key_filter = with_type_hint(curry(regex_filter))(args.key_filter)
+    val_filter = with_type_hint(curry(regex_filter))(args.val_filter)
     for key, val in cache.items():
         if key_filter(str(key)) and val_filter(str(val)):
             if args.columns and not isinstance(val, dict):
