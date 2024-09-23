@@ -1,15 +1,20 @@
 """Common testing functionalities."""
 
 import signal
+import sys
 from contextlib import contextmanager
 from json import dumps
 from typing import Iterator
 
+import six
 from avro.schema import Schema, parse
 from pytest import fixture
 from testcontainers.kafka import KafkaContainer
 
 from snapstream import Cache
+
+if sys.version_info >= (3, 12, 0):
+    sys.modules['kafka.vendor.six.moves'] = six.moves
 
 KAFKA_CONTAINER = 'confluentinc/cp-kafka:7.6.1'
 
