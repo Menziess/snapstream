@@ -1,11 +1,5 @@
 [![Test Python Package](https://github.com/Menziess/snapstream/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menziess/snapstream/actions/workflows/python-test.yml) [![Documentation Status](https://readthedocs.org/projects/snapstream/badge/?version=latest)](https://snapstream.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://static.pepy.tech/personalized-badge/snapstream?period=month&units=international_system&left_color=grey&right_color=brightgreen&left_text=downloads/month)](https://pepy.tech/project/snapstream)
 
-> ### **Note:** confluent-kafka 2.6.0 issues on Azure
->
-> See: https://github.com/confluentinc/confluent-kafka-python/issues/1838
->
-> Add `confluent-kafka == 2.5.3` to your dependencies list
-
 # Snapstream
 
 <img src="https://raw.githubusercontent.com/menziess/snapstream/master/res/logo.png" width="25%" height="25%" align="right" />
