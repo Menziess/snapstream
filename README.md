@@ -6,6 +6,8 @@
 
 Snapstream provides a data-flow model to simplify development of stateful streaming applications.
 
+For an updated async alternative, check out **[Slipstream](https://github.com/Menziess/slipstream)**!
+
 ## Installation
 
 ```sh
